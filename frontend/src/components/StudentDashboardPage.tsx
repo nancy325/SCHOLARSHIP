@@ -2,9 +2,9 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import StudentDashboard from "./ui/StudentDashboard";
 import { User, LayoutDashboard, Search, Settings, Bell, LogOut } from "lucide-react";
-import Profile from "./ui/Profile";
-import SettingsPage from "./ui/SettingsPage";
-import SearchAndApply from "./ui/SearchAndApply";
+import Profile from "../pages/Profile";
+import SettingsPage from "../pages/SettingsPage";
+import SearchAndApply from "./SearchAndApply";
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },

@@ -53,8 +53,8 @@ const Signup = () => {
             <label className="block text-gray-700">Category</label>
             <select className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
               <option value="high-school">High School</option>
+              <option value="diploma">Diploma</option>
               <option value="undergraduate">Undergraduate</option>
-              <option value="graduate">Graduate</option>
               <option value="postgraduate">Postgraduate</option>
               <option value="other">Other</option>
           </select>

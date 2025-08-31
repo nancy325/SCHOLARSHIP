@@ -74,6 +74,13 @@ const Index = () => {
               >
                 Login
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/admin-login")}
+                className="font-medium"
+              >
+                Admin
+              </Button>
             </div>
           </div>
         </div>

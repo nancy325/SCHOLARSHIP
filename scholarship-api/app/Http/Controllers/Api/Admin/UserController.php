@@ -16,7 +16,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = User::with('institute');
+            $query = User::with(['institute', 'university']);
 
             // Search functionality
             if ($request->has('search') && $request->search) {
@@ -37,10 +37,33 @@ class UserController extends Controller
                 $query->where('role', $request->role);
             }
 
-            // Role scoping: non super_admin cannot view super_admins
+            // Role scoping
             $current = $request->user();
             if (($current->role ?? null) !== 'super_admin') {
                 $query->where('role', '!=', 'super_admin');
+            }
+
+            // University and Institute scoping
+            if (($current->role ?? null) === 'institute_admin') {
+                $query->where('institute_id', $current->institute_id ?? 0);
+            } elseif (($current->role ?? null) === 'university_admin') {
+                // University admin sees users in their university
+                $allowedUniversityId = $current->university_id
+                    ?? (function() use ($current) {
+                        $adminInstituteId = $current->institute_id ?? 0;
+                        return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+                    })();
+                if ($allowedUniversityId) {
+                    $query->where(function ($q) use ($allowedUniversityId) {
+                        $q->where('university_id', $allowedUniversityId)
+                          ->orWhereHas('institute', function ($sub) use ($allowedUniversityId) {
+                              $sub->where('university_id', $allowedUniversityId);
+                          });
+                    });
+                } else {
+                    // if no scoping info, prevent leakage by returning empty
+                    $query->whereRaw('1 = 0');
+                }
             }
 
             $users = $query->paginate($request->get('per_page', 15));
@@ -94,6 +117,7 @@ class UserController extends Controller
                 'category' => 'required|string|in:high-school,diploma,undergraduate,postgraduate,other',
                 'role' => 'required|string|in:super_admin,admin,university_admin,institute_admin,student',
                 'institute_id' => 'nullable|exists:institutes,id',
+                'university_id' => 'nullable|exists:universities,id',
             ]);
 
             if ($validator->fails()) {
@@ -111,6 +135,7 @@ class UserController extends Controller
                 'category' => $request->category,
                 'role' => $request->role,
                 'institute_id' => $request->institute_id,
+                'university_id' => $request->university_id,
             ]);
 
             return response()->json([
@@ -143,6 +168,7 @@ class UserController extends Controller
                 'category' => 'sometimes|required|string|in:high-school,diploma,undergraduate,postgraduate,other',
                 'role' => 'sometimes|required|string|in:super_admin,admin,university_admin,institute_admin,student',
                 'institute_id' => 'nullable|exists:institutes,id',
+                'university_id' => 'nullable|exists:universities,id',
             ]);
 
             if ($validator->fails()) {
@@ -153,7 +179,7 @@ class UserController extends Controller
                 ], 422);
             }
 
-            $updateData = $request->only(['name', 'email', 'category', 'role', 'institute_id']);
+            $updateData = $request->only(['name', 'email', 'category', 'role', 'institute_id', 'university_id']);
             
             if ($request->has('password')) {
                 $updateData['password'] = Hash::make($request->password);
@@ -229,8 +255,8 @@ class UserController extends Controller
         try {
             $stats = [
                 'total_users' => User::count(),
-                'admin_users' => User::where('is_admin', true)->count(),
-                'regular_users' => User::where('is_admin', false)->count(),
+                'admin_users' => User::whereIn('role', ['super_admin','admin','university_admin','institute_admin'])->count(),
+                'regular_users' => User::where('role', 'student')->count(),
                 'users_by_category' => User::selectRaw('category, count(*) as count')
                     ->groupBy('category')
                     ->get(),

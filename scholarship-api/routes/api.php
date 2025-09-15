@@ -54,6 +54,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'role:super_admin,admin,univ
     Route::apiResource('scholarships', \App\Http\Controllers\Api\Admin\ScholarshipController::class);
     Route::get('/scholarships/stats', [\App\Http\Controllers\Api\Admin\ScholarshipController::class, 'getStats']);
     Route::get('/scholarships/institutes', [\App\Http\Controllers\Api\Admin\ScholarshipController::class, 'getInstitutes']);
+
+    // Universities
+    Route::middleware('role:super_admin,admin,university_admin')->post('/universities', [\App\Http\Controllers\Api\Admin\UniversityController::class, 'store']);
 });
 
 // Public/Protected Scholarship routes per spec
@@ -75,16 +78,37 @@ Route::middleware(['auth:sanctum', 'role:student'])->group(function () {
 });
 
 // Public institutes options for select inputs
-Route::get('/institutes/options', function () {
+Route::get('/institutes/options', function (Request $request) {
+    $query = Institute::select('id', 'name', 'university_id')->orderBy('name');
     return response()->json([
         'success' => true,
-        'data' => Institute::select('id', 'name', 'university_id')->orderBy('name')->get(),
+        'data' => $query->get(),
     ]);
 });
 
-Route::get('/universities/options', function () {
+// Universities options for select inputs (auth to enable role scoping)
+Route::middleware('auth:sanctum')->get('/universities/options', function (Request $request) {
+    $query = University::select('id', 'name')->orderBy('name');
+    $user = $request->user();
+    if ($user && ($user->role ?? null) === 'university_admin') {
+        $universityId = $user->university_id
+            ?? (function() use ($user) {
+                $adminInstituteId = $user->institute_id ?? 0;
+                return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+            })();
+        if ($universityId) {
+            $query->where('id', $universityId);
+        } else {
+            // if no scoping info, return empty list to avoid leakage
+            $query->whereRaw('1 = 0');
+        }
+    } elseif ($user && ($user->role ?? null) === 'institute_admin') {
+        $adminInstituteId = $user->institute_id ?? 0;
+        $universityId = \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+        $query->where('id', $universityId);
+    }
     return response()->json([
         'success' => true,
-        'data' => University::select('id', 'name')->orderBy('name')->get(),
+        'data' => $query->get(),
     ]);
 });

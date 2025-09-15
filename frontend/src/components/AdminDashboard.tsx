@@ -143,9 +143,9 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 mt-1">
                       {stat.description}
-                    </p>
+                    </div>
                     <div className="flex items-center pt-3">
                       <Badge 
                         variant={stat.changeType === 'positive' ? 'default' : 'destructive'}

@@ -19,7 +19,6 @@ const QuickActions = () => {
     { title: "Complete Profile", icon: <FileText className="w-4 h-4" />, progress: 85 },
     { title: "Upload Documents", icon: <FileText className="w-4 h-4" />, progress: 60 },
     { title: "Find Scholarships", icon: <Bookmark className="w-4 h-4" />, progress: 100 },
-    { title: "Track Applications", icon: <TrendingUp className="w-4 h-4" />, progress: 75 }
   ];
 
   const getStatusIcon = (status: string) => {

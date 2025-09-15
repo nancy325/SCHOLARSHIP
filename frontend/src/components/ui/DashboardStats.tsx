@@ -19,14 +19,6 @@ const stats = [
     bgGradient: "from-green-50 to-green-100"
   },
   { 
-    label: "Applications", 
-    value: 8, 
-    note: "In progress",
-    icon: <TrendingUp className="w-5 h-5" />,
-    gradient: "from-purple-500 to-purple-600",
-    bgGradient: "from-purple-50 to-purple-100"
-  },
-  { 
     label: "Deadlines", 
     value: 5, 
     note: "This week",

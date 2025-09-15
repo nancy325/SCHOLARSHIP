@@ -24,8 +24,8 @@ class User extends Authenticatable
         'password',
         'category',
         'role',
-        'is_admin',
         'institute_id',
+        'university_id',
     ];
 
     /**
@@ -60,5 +60,10 @@ class User extends Authenticatable
     public function institute()
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    public function university()
+    {
+        return $this->belongsTo(University::class);
     }
 }

@@ -49,4 +49,9 @@ class Institute extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

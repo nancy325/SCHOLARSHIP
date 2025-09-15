@@ -49,27 +49,31 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [institutes, setInstitutes] = useState([]);
-  const [newUser, setNewUser] = useState({
+  const [universities, setUniversities] = useState([]);
+  const [newUser, setNewUser] = useState<any>({
     name: '',
     email: '',
     password: '',
     category: 'undergraduate',
     role: 'student',
-    institute_id: null
+    institute_id: null,
+    university_id: null
   });
-  const [editUser, setEditUser] = useState({
+  const [editUser, setEditUser] = useState<any>({
     name: '',
     email: '',
     password: '',
     category: 'undergraduate',
     role: 'student',
-    institute_id: null
+    institute_id: null,
+    university_id: null
   });
 
   // Fetch users from API
   useEffect(() => {
     fetchUsers();
     fetchInstitutes();
+    fetchUniversities();
   }, [searchTerm, statusFilter]);
 
   const fetchUsers = async () => {
@@ -107,6 +111,18 @@ const UserManagement = () => {
     }
   };
 
+  const fetchUniversities = async () => {
+    try {
+      const response = await apiService.getUniversities();
+      if (response.success) {
+        // Handle both plain options list and paginated shapes
+        setUniversities((response as any).data?.data || (response as any).data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch universities:', error);
+    }
+  };
+
   const handleCreateUser = async () => {
     try {
       const response = await apiService.createUser(newUser);
@@ -118,7 +134,8 @@ const UserManagement = () => {
           password: '',
           category: 'undergraduate',
           role: 'student',
-          institute_id: null
+          institute_id: null,
+          university_id: null
         });
         fetchUsers(); // Refresh the list
       }
@@ -166,7 +183,8 @@ const UserManagement = () => {
       password: '',
       category: user.category,
       role: user.role || 'student',
-      institute_id: user.institute_id
+      institute_id: user.institute_id,
+      university_id: user.university_id
     });
     setIsEditUserOpen(true);
   };
@@ -321,6 +339,25 @@ const UserManagement = () => {
                   </Select>
                 </div>
                 <div>
+                  <Label htmlFor="university">University</Label>
+                  <Select 
+                    value={newUser.university_id?.toString() || 'none'} 
+                    onValueChange={(value) => setNewUser({...newUser, university_id: value === 'none' ? null : parseInt(value)})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select university" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No University</SelectItem>
+                      {(universities as any[]).map((u: any) => (
+                        <SelectItem key={u.id} value={u.id.toString()}>
+                          {u.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label htmlFor="role">Role</Label>
                   <Select 
                     value={newUser.role}
@@ -446,7 +483,7 @@ const UserManagement = () => {
                       {getStatusBadge(user.category)}
                     </td>
                     <td className="py-3 px-4">
-                      {getRoleBadge(user.role || (user.is_admin ? 'admin' : 'student'))}
+                      {getRoleBadge(user.role || 'student')}
                     </td>
                     {/* <td className="py-3 px-4">
                       <div className="text-center">
@@ -528,7 +565,7 @@ const UserManagement = () => {
                 </div>
                 <div>
                   <Label>Role</Label>
-                  <div>{getRoleBadge(selectedUser.role || (selectedUser.is_admin ? 'admin' : 'student'))}</div>
+                  <div>{getRoleBadge(selectedUser.role || 'student')}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -657,6 +694,25 @@ const UserManagement = () => {
                     {institutes.map((institute: any) => (
                       <SelectItem key={institute.id} value={institute.id.toString()}>
                         {institute.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-university">University</Label>
+                <Select 
+                  value={editUser.university_id?.toString() || 'none'} 
+                  onValueChange={(value) => setEditUser({...editUser, university_id: value === 'none' ? null : parseInt(value)})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No University</SelectItem>
+                    {(universities as any[]).map((u: any) => (
+                      <SelectItem key={u.id} value={u.id.toString()}>
+                        {u.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

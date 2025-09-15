@@ -77,7 +77,7 @@ const Login = () => {
         
         // Redirect to appropriate dashboard
         const role = (response.data.user as any).role;
-        if (role === 'super_admin' || role === 'admin') {
+        if (role === 'super_admin' || role === 'admin' || role === 'university_admin' || role === 'institute_admin') {
           navigate('/admin-dashboard');
         } else {
           navigate('/student-dashboard');

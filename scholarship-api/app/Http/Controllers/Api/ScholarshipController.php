@@ -34,11 +34,29 @@ class ScholarshipController extends Controller
         if ($user) {
             switch ($user->role) {
                 case 'super_admin':
-                case 'admin':
                     // no restriction
                     break;
+                case 'admin':
+                    // Admin: full visibility as per current requirement
+                    break;
                 case 'university_admin':
-                    $query->where('university_id', $user->institute_id ?? 0);
+                    $allowedUniversityId = $user->university_id
+                        ?? (function() use ($user) {
+                            $adminInstituteId = $user->institute_id ?? 0;
+                            return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+                        })();
+                    $query->where(function ($q) use ($allowedUniversityId) {
+                        $q->where(function ($uq) use ($allowedUniversityId) {
+                            $uq->where('type', 'university')
+                               ->where('university_id', $allowedUniversityId);
+                        })
+                        ->orWhere(function ($iq) use ($allowedUniversityId) {
+                            $iq->where('type', 'institute')
+                               ->whereIn('institute_id', function ($sub) use ($allowedUniversityId) {
+                                   $sub->from('institutes')->select('id')->where('university_id', $allowedUniversityId);
+                               });
+                        });
+                    });
                     break;
                 case 'institute_admin':
                     $query->where('institute_id', $user->institute_id ?? 0);
@@ -85,7 +103,7 @@ class ScholarshipController extends Controller
             'title' => 'required|string|max:150',
             'description' => 'required|string',
             'type' => 'required|in:government,private,university,institute',
-            'university_id' => 'nullable|exists:institutes,id',
+            'university_id' => 'nullable|exists:universities,id',
             'institute_id' => 'nullable|exists:institutes,id',
             'eligibility' => 'nullable|string',
             'start_date' => 'nullable|date',
@@ -99,12 +117,31 @@ class ScholarshipController extends Controller
 
         // Role constraints
         if ($user->role === 'university_admin') {
-            if ($request->type !== 'university' || (int) $request->university_id !== (int) ($user->institute_id ?? 0)) {
+            $allowedUniversityId = $user->university_id
+                ?? (function() use ($user) {
+                    $adminInstituteId = $user->institute_id ?? 0;
+                    return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+                })();
+            if (!$allowedUniversityId) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+            if ($request->type !== 'university') {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+            if (!$request->filled('university_id')) {
+                $request->merge(['university_id' => $allowedUniversityId]);
+            } elseif ((int) $request->university_id !== (int) $allowedUniversityId) {
                 return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
             }
         }
         if ($user->role === 'institute_admin') {
-            if ($request->type !== 'institute' || (int) $request->institute_id !== (int) ($user->institute_id ?? 0)) {
+            $allowedInstituteId = $user->institute_id ?? 0;
+            if ($request->type !== 'institute') {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+            if (!$request->filled('institute_id')) {
+                $request->merge(['institute_id' => $allowedInstituteId]);
+            } elseif ((int) $request->institute_id !== (int) $allowedInstituteId) {
                 return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
             }
         }
@@ -126,8 +163,15 @@ class ScholarshipController extends Controller
         $scholarship = Scholarship::findOrFail($id);
 
         // Role constraints
-        if ($user->role === 'university_admin' && $scholarship->university_id !== ($user->institute_id ?? 0)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        if ($user->role === 'university_admin') {
+            $allowedUniversityId = $user->university_id
+                ?? (function() use ($user) {
+                    $adminInstituteId = $user->institute_id ?? 0;
+                    return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+                })();
+            if ($scholarship->university_id !== $allowedUniversityId) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
         }
         if ($user->role === 'institute_admin' && $scholarship->institute_id !== ($user->institute_id ?? 0)) {
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
@@ -137,7 +181,7 @@ class ScholarshipController extends Controller
             'title' => 'sometimes|required|string|max:150',
             'description' => 'sometimes|required|string',
             'type' => 'sometimes|required|in:government,private,university,institute',
-            'university_id' => 'nullable|exists:institutes,id',
+            'university_id' => 'nullable|exists:universities,id',
             'institute_id' => 'nullable|exists:institutes,id',
             'eligibility' => 'nullable|string',
             'start_date' => 'nullable|date',
@@ -147,6 +191,29 @@ class ScholarshipController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        // Additional role constraints for updates
+        if ($user->role === 'university_admin') {
+            $allowedUniversityId = $user->university_id
+                ?? (function() use ($user) {
+                    $adminInstituteId = $user->institute_id ?? 0;
+                    return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+                })();
+            if ($request->has('type') && $request->type !== 'university') {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+            if ($request->has('university_id') && (int) $request->university_id !== (int) $allowedUniversityId) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+        }
+        if ($user->role === 'institute_admin') {
+            if ($request->has('type') && $request->type !== 'institute') {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+            if ($request->has('institute_id') && (int) $request->institute_id !== (int) ($user->institute_id ?? 0)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
         }
 
         $scholarship->update($request->only(['title','description','type','university_id','institute_id','eligibility','start_date','deadline','apply_link']));
@@ -161,8 +228,15 @@ class ScholarshipController extends Controller
         }
 
         $scholarship = Scholarship::findOrFail($id);
-        if ($user->role === 'university_admin' && $scholarship->university_id !== ($user->institute_id ?? 0)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        if ($user->role === 'university_admin') {
+            $allowedUniversityId = $user->university_id
+                ?? (function() use ($user) {
+                    $adminInstituteId = $user->institute_id ?? 0;
+                    return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
+                })();
+            if ($scholarship->university_id !== $allowedUniversityId) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
         }
         if ($user->role === 'institute_admin' && $scholarship->institute_id !== ($user->institute_id ?? 0)) {
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);

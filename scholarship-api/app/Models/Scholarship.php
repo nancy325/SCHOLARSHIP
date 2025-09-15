@@ -35,12 +35,17 @@ class Scholarship extends Model
 
     public function university()
     {
-        return $this->belongsTo(Institute::class, 'university_id');
+        return $this->belongsTo(University::class, 'university_id');
     }
 
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function applications()
+    {
+        return $this->hasMany(Application::class);
     }
 
     // Applications table not used in spec

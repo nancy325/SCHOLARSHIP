@@ -65,6 +65,8 @@ const ScholarshipManagement = () => {
     deadline: '',
     apply_link: ''
   });
+  const currentUser = apiService.getStoredUser();
+  const role = (currentUser as any)?.role;
   const { toast } = useToast();
 
   // Load scholarships and options on component mount
@@ -74,14 +76,62 @@ const ScholarshipManagement = () => {
     fetchUniversities();
   }, []);
 
+  // Default form values when opening create dialog based on role
+  useEffect(() => {
+    if (isAddScholarshipOpen) {
+      if (role === 'university_admin') {
+        setFormData(prev => ({
+          ...prev,
+          type: 'university',
+          university_id: prev.university_id || (universities.length === 1 ? String(universities[0].id) : ''),
+          institute_id: ''
+        }));
+      } else if (role === 'institute_admin') {
+        const defaultUniversityId = prevUniversityIdForInstitute();
+        setFormData(prev => ({
+          ...prev,
+          type: 'institute',
+          university_id: prev.university_id || (defaultUniversityId ? String(defaultUniversityId) : ''),
+          institute_id: prev.institute_id || ''
+        }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAddScholarshipOpen]);
+
+  const prevUniversityIdForInstitute = () => {
+    if (formData.university_id) return Number(formData.university_id);
+    // If universities list filtered to one, use it
+    if (universities.length === 1) return universities[0].id;
+    return undefined;
+  };
+
+  // Determine the single university an admin should be scoped to
+  const computeScopedUniversityId = (): number | undefined => {
+    const userUniversityId = (currentUser as any)?.university_id;
+    const userInstituteId = (currentUser as any)?.institute_id;
+    if (role === 'university_admin' && userUniversityId) {
+      return Number(userUniversityId);
+    }
+    if (role === 'institute_admin' && userInstituteId) {
+      const inst = (institutes as any[]).find((i: any) => Number(i.id) === Number(userInstituteId));
+      if (inst?.university_id) return Number(inst.university_id);
+    }
+    return undefined;
+  };
+
   // Fetch scholarships from API
   const fetchScholarships = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getScholarships({
+      const isAdminContext = ['super_admin', 'admin', 'university_admin', 'institute_admin'].includes(role as string);
+      const response = await (isAdminContext ? apiService.getAdminScholarships({
         search: searchTerm,
         type: typeFilter !== 'all' ? typeFilter : undefined
-      });
+      }) : apiService.getScholarships({
+        search: searchTerm,
+        type: typeFilter !== 'all' ? typeFilter : undefined
+      }));
       if (response.success) {
         setScholarships(response.data.data || []);
       } else {
@@ -119,12 +169,39 @@ const ScholarshipManagement = () => {
     try {
       const response = await apiService.getUniversities();
       if (response.success) {
-        setUniversities(response.data || []);
+        const list = response.data || [];
+        // Client-side scoping fallback
+        const scopedId = computeScopedUniversityId();
+        const scopedList = (role === 'university_admin' || role === 'institute_admin') && scopedId
+          ? list.filter((u: any) => Number(u.id) === Number(scopedId))
+          : list;
+        setUniversities(scopedList);
+        // If scoped down to one, auto-select it
+        if (scopedList.length === 1) {
+          setFormData(prev => ({ ...prev, university_id: String(scopedList[0].id) }));
+        }
       }
     } catch (error) {
       console.error('Error fetching universities:', error);
     }
   };
+
+  // Re-apply scoping once institutes load (to resolve race between calls)
+  useEffect(() => {
+    if (!(role === 'university_admin' || role === 'institute_admin')) return;
+    if (!universities.length) return;
+    const scopedId = computeScopedUniversityId();
+    if (!scopedId) return;
+    // Only narrow if we currently have multiple universities
+    if (universities.length > 1) {
+      const narrowed = universities.filter((u: any) => Number(u.id) === Number(scopedId));
+      if (narrowed.length) {
+        setUniversities(narrowed);
+        setFormData(prev => ({ ...prev, university_id: String(narrowed[0].id) }));
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [institutes]);
 
   // Refetch scholarships when search or filter changes
   useEffect(() => {
@@ -136,10 +213,37 @@ const ScholarshipManagement = () => {
 
   // Form handling functions
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      // Auto semantics: picking an institute makes it an institute-level scholarship
+      if (field === 'institute_id') {
+        const next: any = { ...prev, institute_id: value };
+        // If an institute was picked, set type to 'institute'
+        if (value) {
+          next.type = 'institute';
+          // Sync university_id from selected institute if available
+          const inst = institutesOnly.find((i: any) => String(i.id) === String(value));
+          if (inst?.university_id) {
+            next.university_id = String(inst.university_id);
+          }
+        }
+        return next;
+      }
+
+      // Changing type clears the opposing association
+      if (field === 'type') {
+        if (value === 'university') {
+          return { ...prev, type: value, institute_id: '' };
+        }
+        if (value === 'institute') {
+          return { ...prev, type: value };
+        }
+      }
+
+      return {
+        ...prev,
+        [field]: value
+      };
+    });
   };
 
   const resetForm = () => {
@@ -159,11 +263,25 @@ const ScholarshipManagement = () => {
   const handleCreateScholarship = async () => {
     setSubmitting(true);
     try {
-      const response = await apiService.createScholarship({
+      // Enforce role-based payload constraints on client too
+      // Derive type from selections
+      const selectedInstitute = institutesOnly.find((i: any) => String(i.id) === String(formData.institute_id));
+      const derivedType = formData.institute_id ? 'institute' : (formData.university_id ? 'university' : formData.type);
+      const payload: any = {
         ...formData,
-        university_id: formData.university_id ? Number(formData.university_id) : null,
+        type: derivedType,
+        university_id: formData.university_id ? Number(formData.university_id) : (selectedInstitute?.university_id ?? null),
         institute_id: formData.institute_id ? Number(formData.institute_id) : null,
-      });
+      };
+      if (role === 'university_admin') {
+        payload.type = 'university';
+        payload.institute_id = null;
+      } else if (role === 'institute_admin') {
+        payload.type = 'institute';
+        payload.university_id = null;
+      }
+
+      const response = await apiService.createScholarship(payload);
       if (response.success) {
         toast({
           title: "Success",
@@ -197,11 +315,24 @@ const ScholarshipManagement = () => {
     
     setSubmitting(true);
     try {
-      const response = await apiService.updateScholarship(selectedScholarship.id, {
+      // Enforce role-based payload constraints (match create rules)
+      const selectedInstitute = institutesOnly.find((i: any) => String(i.id) === String(formData.institute_id));
+      const derivedType = formData.institute_id ? 'institute' : (formData.university_id ? 'university' : formData.type);
+      const payload: any = {
         ...formData,
-        university_id: formData.university_id ? Number(formData.university_id) : null,
+        type: derivedType,
+        university_id: formData.university_id ? Number(formData.university_id) : (selectedInstitute?.university_id ?? null),
         institute_id: formData.institute_id ? Number(formData.institute_id) : null,
-      });
+      };
+      if (role === 'university_admin') {
+        payload.type = 'university';
+        payload.institute_id = null;
+      } else if (role === 'institute_admin') {
+        payload.type = 'institute';
+        payload.university_id = null;
+      }
+
+      const response = await apiService.updateScholarship(selectedScholarship.id, payload);
       if (response.success) {
         toast({
           title: "Success",
@@ -358,8 +489,12 @@ const ScholarshipManagement = () => {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="government">Government</SelectItem>
-                      <SelectItem value="private">Private</SelectItem>
+                      {role !== 'university_admin' && role !== 'institute_admin' && (
+                        <>
+                          <SelectItem value="government">Government</SelectItem>
+                          <SelectItem value="private">Private</SelectItem>
+                        </>
+                      )}
                       <SelectItem value="university">University</SelectItem>
                       <SelectItem value="institute">Institute</SelectItem>
                     </SelectContent>
@@ -368,7 +503,7 @@ const ScholarshipManagement = () => {
                 {formData.type === 'university' && (
                 <div>
                     <Label htmlFor="university">University</Label>
-                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)}>
+                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)} disabled={universities.length === 1}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select university" />
                     </SelectTrigger>
@@ -385,7 +520,7 @@ const ScholarshipManagement = () => {
                 {formData.type === 'institute' && (
                 <div>
                     <Label htmlFor="university">University</Label>
-                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)}>
+                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)} disabled={universities.length === 1}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select university" />
                     </SelectTrigger>
@@ -508,8 +643,12 @@ const ScholarshipManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="government">Government</SelectItem>
-                <SelectItem value="private">Private</SelectItem>
+                {role !== 'university_admin' && role !== 'institute_admin' && (
+                  <>
+                    <SelectItem value="government">Government</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </>
+                )}
                 <SelectItem value="university">University</SelectItem>
                 <SelectItem value="institute">Institute</SelectItem>
               </SelectContent>

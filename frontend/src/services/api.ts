@@ -13,7 +13,9 @@ interface User {
   name: string;
   email: string;
   category: string;
-  is_admin?: boolean;
+  role?: string;
+  institute_id?: number | null;
+  university_id?: number | null;
 }
 
 interface AuthResponse {
@@ -276,6 +278,18 @@ class ApiService {
     return this.request(`/scholarships${query ? `?${query}` : ''}`);
   }
 
+  // Admin Scholarship Management
+  async getAdminScholarships(params?: { search?: string; type?: string; university_id?: number; institute_id?: number; page?: number }): Promise<ApiResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.university_id) queryParams.append('university_id', params.university_id.toString());
+    if (params?.institute_id) queryParams.append('institute_id', params.institute_id.toString());
+    if (params?.page) queryParams.append('page', params.page.toString());
+    const query = queryParams.toString();
+    return this.request(`/admin/scholarships${query ? `?${query}` : ''}`);
+  }
+
   async getScholarship(id: number): Promise<ApiResponse> {
     return this.request(`/scholarships/${id}`);
   }
@@ -308,9 +322,17 @@ class ApiService {
     return this.request('/universities/options');
   }
 
+<<<<<<< Updated upstream
   // Student Dashboard
   async getStudentDashboard(): Promise<ApiResponse> {
     return this.request('/student/dashboard');
+=======
+  async createUniversity(universityData: any): Promise<ApiResponse> {
+    return this.request('/admin/universities', {
+      method: 'POST',
+      body: JSON.stringify(universityData),
+    });
+>>>>>>> Stashed changes
   }
 }
 

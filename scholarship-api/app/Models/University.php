@@ -27,6 +27,11 @@ class University extends Model
     {
         return $this->hasMany(Institute::class);
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
 
 

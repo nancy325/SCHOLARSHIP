@@ -25,7 +25,6 @@ class AdminSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'category' => 'other',
                 'role' => 'super_admin',
-                'is_admin' => true,
             ]
         );
 
@@ -96,13 +95,26 @@ class AdminSeeder extends Seeder
                 'students' => 35000,
                 'rating' => 4.4,
             ],
+            [
+                'name' => 'Charotar University of Science and Technology (CHARUSAT)',
+                'status' => 'verified',
+                'email' => 'info@charusat.ac.in',
+                'phone' => '+91-2697-265011',
+                'website' => 'https://www.charusat.ac.in',
+                'address' => 'CHARUSAT Campus, Off Nadiad-Petlad Highway, Changa 388421, Gujarat',
+                'description' => 'Private university in Gujarat with multiple constituent institutes.',
+                'established' => '2009',
+                'accreditation' => 'State',
+                'students' => 9000,
+                'rating' => 4.3,
+            ],
         ];
 
         $createdUniversities = [];
         foreach ($universities as $u) {
             $createdUniversities[] = University::firstOrCreate(
                 ['email' => $u['email']],
-                $u
+                $u + ['created_by' => $admin->id]
             );
         }
 
@@ -199,13 +211,50 @@ class AdminSeeder extends Seeder
                 'contact_phone' => '+91-265-2795555',
                 'university_id' => $createdUniversities[4 - 1]->id, // MSU index 3
             ],
+            // CHARUSAT institutes
+            [
+                'name' => 'Chandubhai S. Patel Institute of Technology (CSPIT)',
+                'type' => 'engineering_college',
+                'status' => 'verified',
+                'email' => 'info@cspit.ac.in',
+                'phone' => '+91-2697-265011',
+                'website' => 'https://www.charusat.ac.in/cspit',
+                'address' => 'CSPIT, CHARUSAT Campus, Changa 388421, Gujarat',
+                'description' => 'Engineering institute under CHARUSAT offering UG and PG programs.',
+                'established' => '2000',
+                'accreditation' => 'State',
+                'students' => 3500,
+                'scholarships_count' => 0,
+                'rating' => 4.4,
+                'contact_person' => 'Principal, CSPIT',
+                'contact_phone' => '+91-2697-265011',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+            ],
+            [
+                'name' => 'Ramanbhai Patel College of Pharmacy (RPCP)',
+                'type' => 'pharmacy_college',
+                'status' => 'verified',
+                'email' => 'info@rpcp.ac.in',
+                'phone' => '+91-2697-265011',
+                'website' => 'https://www.charusat.ac.in/rpcp',
+                'address' => 'RPCP, CHARUSAT Campus, Changa 388421, Gujarat',
+                'description' => 'Pharmacy institute under CHARUSAT.',
+                'established' => '2004',
+                'accreditation' => 'State',
+                'students' => 1200,
+                'scholarships_count' => 0,
+                'rating' => 4.2,
+                'contact_person' => 'Principal, RPCP',
+                'contact_phone' => '+91-2697-265011',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+            ],
         ];
 
         $createdInstitutes = [];
         foreach ($institutes as $instituteData) {
             $createdInstitutes[] = Institute::firstOrCreate(
                 ['email' => $instituteData['email']],
-                $instituteData
+                $instituteData + ['created_by' => $admin->id]
             );
         }
 
@@ -245,6 +294,23 @@ class AdminSeeder extends Seeder
             $createdUsers[] = User::firstOrCreate(
                 ['email' => $userData['email']],
                 $userData
+            );
+        }
+
+        // Create CHARUSAT university admin user
+        $charusatUniversity = collect($createdUniversities)->firstWhere('name', 'Charotar University of Science and Technology (CHARUSAT)');
+        if ($charusatUniversity) {
+            User::firstOrCreate(
+                ['email' => 'charusat@scholarship.com'],
+                [
+                    'name' => 'CHARUSAT Admin',
+                    'password' => Hash::make('password123'),
+                    'category' => 'other',
+                    'role' => 'university_admin',
+                    'is_admin' => true,
+                    'university_id' => $charusatUniversity->id,
+                    'institute_id' => null, // University admin doesn't belong to specific institute
+                ]
             );
         }
 
@@ -338,6 +404,184 @@ class AdminSeeder extends Seeder
                 'start_date' => now()->subDays(10)->toDateString(),
                 'deadline' => now()->addMonths(1)->toDateString(),
                 'apply_link' => 'https://ldce.ac.in/alumni',
+            ],
+            // CHARUSAT scholarships
+            [
+                'title' => 'CHARUSAT Merit Scholarship',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Merit scholarship for top-performing students across CHARUSAT constituent institutes.',
+                'eligibility' => 'Top 5% students by CGPA in each program; no backlogs.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CHARUSAT Need-Based Assistance',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Financial assistance for economically weaker students enrolled at CHARUSAT.',
+                'eligibility' => 'Family income below university threshold; satisfactory academic progress.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(3)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CSPIT Excellence Scholarship',
+                'type' => 'institute',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => collect($createdInstitutes)->firstWhere('email', 'info@cspit.ac.in')->id ?? null,
+                'description' => 'Scholarship for CSPIT students with outstanding academic performance and contributions.',
+                'eligibility' => 'CGPA >= 9.0; involvement in projects/clubs; faculty recommendation.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(1)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/cspit/scholarships',
+            ],
+            // Additional CHARUSAT scholarships (representative set)
+            [
+                'title' => 'CHARUSAT Sports Excellence Scholarship',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Fee concession for students with state/national level sports achievements.',
+                'eligibility' => 'State/National level participation/medal in last 3 years; minimum CGPA as per policy.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CHARUSAT Alumni Scholarship',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Scholarship funded by CHARUSAT alumni for meritorious and needy students.',
+                'eligibility' => 'Family income threshold and merit as per alumni trust norms.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CHARUSAT Girl Child Scholarship',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Tuition fee concession for female students to promote higher education.',
+                'eligibility' => 'Open to all female students meeting academic progression criteria.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CHARUSAT EWS Tuition Fee Waiver',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Partial tuition fee waiver for Economically Weaker Section students.',
+                'eligibility' => 'EWS certificate and income proof; satisfactory CGPA.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(3)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CHARUSAT Hostel Fee Concession',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Need-based concession on hostel fees for eligible students.',
+                'eligibility' => 'Income threshold; good disciplinary record.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(3)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CHARUSAT Research Seed Grant (UG/PG)',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Seed grant to support student research and innovation projects.',
+                'eligibility' => 'Faculty mentor required; proposal and budget approval by committee.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(4)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/research',
+            ],
+            [
+                'title' => 'CHARUSAT PG Teaching Assistantship',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Monthly stipend for PG students assisting in labs/tutorials.',
+                'eligibility' => 'Minimum CGPA and workload norms as per policy.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/scholarships',
+            ],
+            [
+                'title' => 'CHARUSAT Doctoral Fellowship (PhD)',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Fellowship for full-time PhD scholars at CHARUSAT.',
+                'eligibility' => 'Full-time PhD registration and merit as per CHARUSAT PhD rules.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(4)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/phd',
+            ],
+            [
+                'title' => 'International Conference Travel Grant (Students)',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Partial travel support for presenting papers at reputed international conferences.',
+                'eligibility' => 'Accepted paper with supervisor endorsement; ranking of conference considered.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(6)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/research',
+            ],
+            [
+                'title' => 'CHARUSAT Student Startup Seed Support',
+                'type' => 'university',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => null,
+                'description' => 'Seed support for student-founded startups incubated at CHARUSAT Innovation & Incubation Center.',
+                'eligibility' => 'Selection by incubation cell; milestone-based release.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(5)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/incubation',
+            ],
+            [
+                'title' => 'RPCP Merit Scholarship',
+                'type' => 'institute',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => collect($createdInstitutes)->firstWhere('email', 'info@rpcp.ac.in')->id ?? null,
+                'description' => 'Merit scholarship for top-ranking B.Pharm and M.Pharm students at RPCP.',
+                'eligibility' => 'Top 10% by CGPA; no backlog.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(1)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/rpcp/scholarships',
+            ],
+            [
+                'title' => 'RPCP Need-Based Scholarship',
+                'type' => 'institute',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => collect($createdInstitutes)->firstWhere('email', 'info@rpcp.ac.in')->id ?? null,
+                'description' => 'Financial assistance for economically weaker students at RPCP.',
+                'eligibility' => 'Income threshold and satisfactory progress.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/rpcp/scholarships',
+            ],
+            [
+                'title' => 'CSPIT Innovation Project Grant',
+                'type' => 'institute',
+                'university_id' => $createdUniversities[ count($createdUniversities) - 1 ]->id,
+                'institute_id' => collect($createdInstitutes)->firstWhere('email', 'info@cspit.ac.in')->id ?? null,
+                'description' => 'Mini-grants to support innovative engineering projects at CSPIT.',
+                'eligibility' => 'Faculty-mentored proposal; demo/prototype expected.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.charusat.ac.in/cspit/scholarships',
             ],
         ];
 

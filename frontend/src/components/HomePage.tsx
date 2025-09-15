@@ -1,9 +1,45 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { GraduationCap, FileText, Building2, HelpCircle } from "lucide-react";
+import { GraduationCap, Calendar, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import heroImage from "@/assets/scholarship-hero.jpg";
+import { useState } from "react";
 
 const HomePage = () => {
+  // Featured scholarships slider state
+  const [currentFeatured, setCurrentFeatured] = useState(0);
+  const featuredItems = [
+    { 
+      id: 1,
+      title: "SCHAFFTER INDIA SOCIAL INNOVATOR FELLOWSHIP PROGRAM 2025", 
+      deadline: "September 15, 2025", 
+      tag: "Security",
+      tagColor: "bg-blue-100 text-blue-800"
+    },
+    { 
+      id: 2,
+      title: "DXC PROGRESSING MINDS SCHOLARSHIP 2025-28", 
+      deadline: "September 30, 2025", 
+      tag: "FCC",
+      tagColor: "bg-green-100 text-green-800"
+    },
+    { 
+      id: 3,
+      title: "OAKNORTH STEM SCHOLARSHIP PROGRAMME 2025-28", 
+      deadline: "October 10, 2025", 
+      tag: "STEM Focus",
+      tagColor: "bg-purple-100 text-purple-800"
+    },
+    { 
+      id: 4,
+      title: "BUDDYASTUDY 'EMPOWERING - SCHOLARSHIPS' TRAINING (BEST) PROGRAM", 
+      deadline: "September 15, 2025", 
+      tag: "Training Program",
+      tagColor: "bg-orange-100 text-orange-800"
+    },
+  ];
+
+  const nextFeatured = () => setCurrentFeatured((prev) => (prev === featuredItems.length - 1 ? 0 : prev + 1));
+  const prevFeatured = () => setCurrentFeatured((prev) => (prev === 0 ? featuredItems.length - 1 : prev - 1));
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -39,69 +75,79 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Quick Links Section */}
-      <section className="py-16 bg-muted/30">
+      {/* Featured Scholarships Section with Carousel */}
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Get Started Today
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Whether you're an institute looking to register or a student seeking information, 
-              we've made it easy to find what you need.
-            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Featured Scholarships</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Explore our curated list of prestigious scholarship opportunities.</p>
+          </div>
+
+          {/* Carousel Container */}
+          <div className="max-w-4xl mx-auto">
+            <div className="relative">
+              {/* Navigation Arrows */}
+              <button 
+                onClick={prevFeatured}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all"
+                aria-label="Previous scholarship"
+              >
+                <ChevronLeft className="w-5 h-5 text-foreground" />
+              </button>
+              
+              <button 
+                onClick={nextFeatured}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all"
+                aria-label="Next scholarship"
+              >
+                <ChevronRight className="w-5 h-5 text-foreground" />
+              </button>
+
+              {/* Scholarship Card */}
+              <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  {featuredItems[currentFeatured].title}
+                </h3>
+                <div className="flex items-center text-muted-foreground mb-4">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>Deadline: {featuredItems[currentFeatured].deadline}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className={`text-xs px-2 py-1 rounded-full ${featuredItems[currentFeatured].tagColor}`}>
+                    {featuredItems[currentFeatured].tag}
+                  </span>
+                  <a href="#" className="text-primary font-medium hover:underline flex items-center">
+                    View Details <ArrowRight className="w-4 h-4 ml-1" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Indicator Dots */}
+            <div className="flex justify-center mt-6 space-x-2">
+              {featuredItems.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentFeatured(index)}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    index === currentFeatured ? 'bg-primary' : 'bg-muted-foreground/30'
+                  }`}
+                  aria-label={`Go to scholarship ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:-translate-y-1">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-glow rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <FileText className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">About Us</h3>
-                <p className="text-muted-foreground mb-4">Learn about our mission and vision for educational empowerment</p>
-                <Button variant="outline" className="w-full">Learn More</Button>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:-translate-y-1">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-secondary to-secondary-glow rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Building2 className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">Register Institute</h3>
-                <p className="text-muted-foreground mb-4">Join our network of educational institutions and scholarship providers</p>
-                <Button className="w-full">Register Now</Button>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:-translate-y-1">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-glow rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <HelpCircle className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">FAQs</h3>
-                <p className="text-muted-foreground mb-4">Find answers to commonly asked questions about scholarships</p>
-                <Button variant="outline" className="w-full">View FAQs</Button>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:-translate-y-1">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-secondary to-secondary-glow rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <GraduationCap className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">Student Portal</h3>
-                <p className="text-muted-foreground mb-4">Access scholarship applications and track your progress</p>
-                <Button className="w-full">Access Portal</Button>
-              </CardContent>
-            </Card>
+          <div className="text-center mt-10">
+            <Button variant="outline" size="lg">
+              View All Scholarships
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Statistics Section */}
-      <section className="py-16 bg-background">
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto text-center">
             <div>
@@ -119,6 +165,26 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-10 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg font-semibold text-foreground">ScholarSnap</span>
+            </div>
+            <div className="text-sm text-muted-foreground">© {new Date().getFullYear()} ScholarSnap. All rights reserved.</div>
+            <div className="flex gap-4 text-sm">
+              <a className="text-muted-foreground hover:text-foreground" href="#">Privacy</a>
+              <a className="text-muted-foreground hover:text-foreground" href="#">Terms</a>
+              <a className="text-muted-foreground hover:text-foreground" href="#">Support</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

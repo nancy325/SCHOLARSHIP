@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import HomePage from "@/components/HomePage";
 import AboutUsPage from "@/components/AboutUsPage";
 import FAQsPage from "@/components/FAQsPage";
@@ -32,10 +31,10 @@ const Index = () => {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg"></div>
-              <span className="text-xl font-bold text-foreground">ScholarPortal</span>
+              <img src="/favicon.png" alt="Logo" className="w-20 h-20 rounded-lg" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] bg-clip-text text-transparent">ScholarSnap</span>
             </div>
             
             <div className="flex items-center space-x-1">
@@ -68,19 +67,20 @@ const Index = () => {
                 FAQs
               </Button>
               <Button
+                variant="ghost"
+                onClick={() => navigate("/contact")}
+                className="font-medium"
+              >
+                Contact
+              </Button>
+              <Button
                 variant={currentPage === "Login" ? "default" : "ghost"}
                 onClick={() => navigate("/login")}
                 className="font-medium"
               >
                 Login
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/admin-login")}
-                className="font-medium"
-              >
-                Admin
-              </Button>
+              
             </div>
           </div>
         </div>

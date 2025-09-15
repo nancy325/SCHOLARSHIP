@@ -70,7 +70,6 @@ Route::prefix('scholarships')->group(function () {
     });
 });
 
-<<<<<<< Updated upstream
 // Student dashboard (authenticated student)
 Route::middleware(['auth:sanctum', 'role:student'])->group(function () {
     Route::get('/student/dashboard', [StudentDashboardController::class, 'show']);
@@ -79,23 +78,8 @@ Route::middleware(['auth:sanctum', 'role:student'])->group(function () {
 });
 
 // Public institutes options for select inputs
-Route::get('/institutes/options', function () {
-=======
-// Institutes options for select inputs (auth to enable role scoping)
-Route::middleware('auth:sanctum')->get('/institutes/options', function (Request $request) {
+Route::get('/institutes/options', function (Request $request) {
     $query = Institute::select('id', 'name', 'university_id')->orderBy('name');
-    $user = $request->user();
-    if ($user && ($user->role ?? null) === 'university_admin') {
-        $universityId = $user->university_id
-            ?? (function() use ($user) {
-                $adminInstituteId = $user->institute_id ?? 0;
-                return \DB::table('institutes')->where('id', $adminInstituteId)->value('university_id') ?? 0;
-            })();
-        $query->where('university_id', $universityId);
-    } elseif ($user && ($user->role ?? null) === 'institute_admin') {
-        $query->where('id', $user->institute_id ?? 0);
-    }
->>>>>>> Stashed changes
     return response()->json([
         'success' => true,
         'data' => $query->get(),

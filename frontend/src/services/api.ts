@@ -322,17 +322,17 @@ class ApiService {
     return this.request('/universities/options');
   }
 
-<<<<<<< Updated upstream
   // Student Dashboard
   async getStudentDashboard(): Promise<ApiResponse> {
     return this.request('/student/dashboard');
-=======
+  }
+
   async createUniversity(universityData: any): Promise<ApiResponse> {
     return this.request('/admin/universities', {
       method: 'POST',
       body: JSON.stringify(universityData),
     });
->>>>>>> Stashed changes
+
   }
 }
 

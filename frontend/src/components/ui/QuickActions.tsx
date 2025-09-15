@@ -1,20 +1,11 @@
 // src/components/ui/QuickActions.tsx
 import { Calendar, FileText, Bookmark, TrendingUp, AlertCircle, CheckCircle, Clock, ExternalLink } from "lucide-react";
 
-const QuickActions = () => {
-  const recentActivity = [
-    { action: "Applied to STEM Excellence Scholarship", time: "2 hours ago", status: "pending" },
-    { action: "Profile updated", time: "1 day ago", status: "completed" },
-    { action: "New scholarship match found", time: "2 days ago", status: "new" },
-    { action: "Application deadline reminder", time: "3 days ago", status: "reminder" }
-  ];
+type Deadline = { id: number; title: string; deadline?: string | null };
+type RecentApp = { id: number; scholarship_id: number; status: string; submitted_at?: string | null; created_at: string };
+type Props = { deadlines: Deadline[]; recentApplications: RecentApp[]; loading?: boolean };
 
-  const upcomingDeadlines = [
-    { scholarship: "STEM Excellence Scholarship", deadline: "June 30, 2024", daysLeft: 3 },
-    { scholarship: "Women in Tech Grant", deadline: "July 15, 2024", daysLeft: 18 },
-    { scholarship: "Community Service Award", deadline: "August 1, 2024", daysLeft: 35 }
-  ];
-
+const QuickActions = ({ deadlines, recentApplications, loading }: Props) => {
   const quickLinks = [
     { title: "Complete Profile", icon: <FileText className="w-4 h-4" />, progress: 85 },
     { title: "Upload Documents", icon: <FileText className="w-4 h-4" />, progress: 60 },
@@ -59,28 +50,31 @@ const QuickActions = () => {
         </div>
       </div>
 
-      {/* Upcoming Deadlines */}
+      {/* Upcoming Deadlines */
+      }
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-red-500" />
           Upcoming Deadlines
         </h3>
         <div className="space-y-3">
-          {upcomingDeadlines.map((deadline, index) => (
+          {(loading ? Array.from({ length: 3 }).map((_, i) => ({ id: i, title: 'Loading...', deadline: '' })) : deadlines).map((deadline, index) => {
+            const daysLeft = deadline.deadline ? Math.max(0, Math.ceil((new Date(deadline.deadline).getTime() - Date.now()) / (1000*60*60*24))) : undefined;
+            return (
             <div key={index} className="p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-800">{deadline.scholarship}</span>
+                <span className="text-sm font-medium text-gray-800">{deadline.title}</span>
                 <span className={`text-xs px-2 py-1 rounded-full ${
-                  deadline.daysLeft <= 7 ? 'bg-red-100 text-red-600' : 
-                  deadline.daysLeft <= 14 ? 'bg-orange-100 text-orange-600' : 
+                  (daysLeft ?? 0) <= 7 ? 'bg-red-100 text-red-600' : 
+                  (daysLeft ?? 0) <= 14 ? 'bg-orange-100 text-orange-600' : 
                   'bg-green-100 text-green-600'
                 }`}>
-                  {deadline.daysLeft} days
+                  {daysLeft ?? '—'} days
                 </span>
               </div>
-              <div className="text-xs text-gray-500">{deadline.deadline}</div>
+              <div className="text-xs text-gray-500">{deadline.deadline || '—'}</div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
 
@@ -88,14 +82,14 @@ const QuickActions = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
         <div className="space-y-3">
-          {recentActivity.map((activity, index) => (
+          {(loading ? Array.from({ length: 3 }).map((_, i) => ({ id: i, status: 'pending', created_at: new Date().toISOString(), scholarship_id: 0 })) : recentApplications).map((activity, index) => (
             <div key={index} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
               <div className="mt-0.5">
                 {getStatusIcon(activity.status)}
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-700">{activity.action}</p>
-                <p className="text-xs text-gray-500">{activity.time}</p>
+                <p className="text-sm text-gray-700">Application status: {activity.status}</p>
+                <p className="text-xs text-gray-500">{new Date(activity.created_at).toLocaleString()}</p>
               </div>
             </div>
           ))}
@@ -111,7 +105,10 @@ const QuickActions = () => {
         <p className="text-sm text-blue-100 mb-4">
           Complete your profile to 100% to unlock personalized scholarship recommendations and increase your match score.
         </p>
-        <button className="w-full bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+        <button
+          className="w-full bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+          onClick={() => window.location.href = "/profile"}
+        >
           Complete Profile
         </button>
       </div>

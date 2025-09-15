@@ -76,6 +76,35 @@ class ApiService {
     }
   }
 
+  // Generic helpers for arbitrary endpoints
+  async get<T = any>(endpoint: string, params?: Record<string, string | number | boolean | undefined>): Promise<ApiResponse<T>> {
+    const qs = params
+      ? `?${Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== null)
+          .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+          .join('&')}`
+      : '';
+    return this.request<T>(`${endpoint}${qs}`);
+  }
+
+  async post<T = any>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  async put<T = any>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
   // Authentication methods
   async register(userData: {
     name: string;
@@ -277,6 +306,11 @@ class ApiService {
 
   async getUniversities(): Promise<ApiResponse> {
     return this.request('/universities/options');
+  }
+
+  // Student Dashboard
+  async getStudentDashboard(): Promise<ApiResponse> {
+    return this.request('/student/dashboard');
   }
 }
 

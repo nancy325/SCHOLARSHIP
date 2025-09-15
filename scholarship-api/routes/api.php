@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Models\Institute;
 use App\Models\University;
+use App\Http\Controllers\Api\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Api\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +65,13 @@ Route::prefix('scholarships')->group(function () {
         Route::put('/{id}', [\App\Http\Controllers\Api\ScholarshipController::class, 'update']);
         Route::delete('/{id}', [\App\Http\Controllers\Api\ScholarshipController::class, 'destroy']);
     });
+});
+
+// Student dashboard (authenticated student)
+Route::middleware(['auth:sanctum', 'role:student'])->group(function () {
+    Route::get('/student/dashboard', [StudentDashboardController::class, 'show']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
 });
 
 // Public institutes options for select inputs

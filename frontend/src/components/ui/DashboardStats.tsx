@@ -1,37 +1,37 @@
 // src/components/StudentDashboard/DashboardStats.tsx
 import { TrendingUp, Target, Clock, Award } from "lucide-react";
 
-const stats = [
-  { 
-    label: "Total Scholarships", 
-    value: 247, 
-    note: "Available scholarships",
-    icon: <Award className="w-5 h-5" />,
-    gradient: "from-blue-500 to-blue-600",
-    bgGradient: "from-blue-50 to-blue-100"
-  },
-  { 
-    label: "Eligible For", 
-    value: 23, 
-    note: "Based on your profile",
-    icon: <Target className="w-5 h-5" />,
-    gradient: "from-green-500 to-green-600",
-    bgGradient: "from-green-50 to-green-100"
-  },
-  { 
-    label: "Deadlines", 
-    value: 5, 
-    note: "This week",
-    icon: <Clock className="w-5 h-5" />,
-    gradient: "from-orange-500 to-orange-600",
-    bgGradient: "from-orange-50 to-orange-100"
-  }
-];
+type Props = {
+  loading?: boolean;
+  data?: {
+    total_visible_scholarships: number;
+    deadlines_this_week: number;
+  } | null;
+};
 
-const DashboardStats = () => {
+const DashboardStats = ({ loading, data }: Props) => {
+  const items = [
+    { 
+      label: "Total Scholarships", 
+      value: data?.total_visible_scholarships ?? (loading ? '—' : 0), 
+      note: "Available scholarships",
+      icon: <Award className="w-5 h-5" />,
+      gradient: "from-blue-500 to-blue-600",
+      bgGradient: "from-blue-50 to-blue-100"
+    },
+    { 
+      label: "Deadlines", 
+      value: data?.deadlines_this_week ?? (loading ? '—' : 0), 
+      note: "This week",
+      icon: <Clock className="w-5 h-5" />,
+      gradient: "from-orange-500 to-orange-600",
+      bgGradient: "from-orange-50 to-orange-100"
+    }
+  ];
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      {stats.map((stat, index) => (
+      {items.map((stat, index) => (
         <div key={index} className={`bg-gradient-to-br ${stat.bgGradient} rounded-xl shadow-sm p-6 border border-white/50 hover:shadow-md transition-all duration-300 group`}>
           <div className="flex items-center justify-between mb-3">
             <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.gradient} text-white shadow-sm`}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Plus, 
@@ -15,7 +15,8 @@ import {
   BookOpen,
   Target,
   Award,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { apiService } from '@/services/api';
 
 const ScholarshipManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,98 +49,207 @@ const ScholarshipManagement = () => {
   const [isEditScholarshipOpen, setIsEditScholarshipOpen] = useState(false);
   const [isViewScholarshipOpen, setIsViewScholarshipOpen] = useState(false);
   const [selectedScholarship, setSelectedScholarship] = useState(null);
-
-  // Mock data - replace with actual API calls
-  const scholarships = [
-    {
-      id: 1,
-      title: 'Merit-Based Engineering Scholarship',
-      institute: 'University of Technology',
-      type: 'merit_based',
-      status: 'active',
-      amount: 25000,
-      currency: 'USD',
-      deadline: '2024-03-15',
-      applications: 45,
-      maxApplications: 100,
-      field: 'Engineering',
-      level: 'undergraduate',
-      description: 'A prestigious scholarship for outstanding engineering students demonstrating academic excellence and leadership potential.',
-      requirements: 'Minimum 3.8 GPA, Engineering major, Leadership experience',
-      eligibility: 'US citizens, Full-time students, Engineering majors',
-      documents: 'Transcript, Resume, Letters of recommendation, Personal statement',
-      createdDate: '2024-01-15',
-      lastUpdated: '2024-01-20'
-    },
-    {
-      id: 2,
-      title: 'Community Service Leadership Award',
-      institute: 'State Community College',
-      type: 'need_based',
-      status: 'active',
-      amount: 10000,
-      currency: 'USD',
-      deadline: '2024-04-01',
-      applications: 23,
-      maxApplications: 50,
-      field: 'Any',
-      level: 'undergraduate',
-      description: 'Recognition for students who have demonstrated exceptional community service and leadership.',
-      requirements: 'Minimum 3.0 GPA, 100+ community service hours, Leadership role',
-      eligibility: 'All students, Community service experience required',
-      documents: 'Service log, Letters of recommendation, Personal statement',
-      createdDate: '2024-01-10',
-      lastUpdated: '2024-01-18'
-    },
-    {
-      id: 3,
-      title: 'Innovation in Technology Grant',
-      institute: 'Tech Institute of Innovation',
-      type: 'project_based',
-      status: 'pending',
-      amount: 15000,
-      currency: 'USD',
-      deadline: '2024-05-30',
-      applications: 0,
-      maxApplications: 25,
-      field: 'Technology',
-      level: 'graduate',
-      description: 'Funding for innovative technology projects that demonstrate creativity and potential impact.',
-      requirements: 'Project proposal, Technology background, Innovation focus',
-      eligibility: 'Graduate students, Technology/CS majors',
-      documents: 'Project proposal, Portfolio, Academic references',
-      createdDate: '2024-01-05',
-      lastUpdated: '2024-01-20'
-    },
-    {
-      id: 4,
-      title: 'Arts and Humanities Excellence Scholarship',
-      institute: 'Liberal Arts College',
-      type: 'merit_based',
-      status: 'expired',
-      amount: 20000,
-      currency: 'USD',
-      deadline: '2023-12-01',
-      applications: 67,
-      maxApplications: 75,
-      field: 'Arts & Humanities',
-      level: 'undergraduate',
-      description: 'Supporting students pursuing degrees in arts, literature, philosophy, and related fields.',
-      requirements: 'Minimum 3.7 GPA, Arts/Humanities major, Creative portfolio',
-      eligibility: 'Arts & Humanities majors, Full-time students',
-      documents: 'Portfolio, Academic transcript, Creative samples',
-      createdDate: '2023-11-01',
-      lastUpdated: '2023-12-15'
-    }
-  ];
-
-  const filteredScholarships = scholarships.filter(scholarship => {
-    const matchesSearch = scholarship.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         scholarship.institute.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         scholarship.field.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || scholarship.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const [scholarships, setScholarships] = useState([]);
+  const [institutes, setInstitutes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    institute_id: '',
+    type: '',
+    amount: '',
+    currency: 'USD',
+    deadline: '',
+    max_applications: '',
+    field: '',
+    level: '',
+    description: '',
+    requirements: '',
+    eligibility: '',
+    documents: '',
+    status: 'active'
   });
+  const { toast } = useToast();
+
+  // Load scholarships and institutes on component mount
+  useEffect(() => {
+    fetchScholarships();
+    fetchInstitutes();
+  }, []);
+
+  // Fetch scholarships from API
+  const fetchScholarships = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.getScholarships({
+        search: searchTerm,
+        status: statusFilter !== 'all' ? statusFilter : undefined
+      });
+      if (response.success) {
+        setScholarships(response.data.data || []);
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to fetch scholarships",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching scholarships:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch scholarships",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch institutes for dropdown
+  const fetchInstitutes = async () => {
+    try {
+      const response = await apiService.getScholarshipInstitutes();
+      if (response.success) {
+        setInstitutes(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching institutes:', error);
+    }
+  };
+
+  // Refetch scholarships when search or filter changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchScholarships();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, statusFilter]);
+
+  // Form handling functions
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      institute_id: '',
+      type: '',
+      amount: '',
+      currency: 'USD',
+      deadline: '',
+      max_applications: '',
+      field: '',
+      level: '',
+      description: '',
+      requirements: '',
+      eligibility: '',
+      documents: '',
+      status: 'active'
+    });
+  };
+
+  // Create scholarship
+  const handleCreateScholarship = async () => {
+    setSubmitting(true);
+    try {
+      const response = await apiService.createScholarship(formData);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Scholarship created successfully",
+        });
+        setIsAddScholarshipOpen(false);
+        resetForm();
+        fetchScholarships();
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to create scholarship",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating scholarship:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create scholarship",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Update scholarship
+  const handleUpdateScholarship = async () => {
+    if (!selectedScholarship) return;
+    
+    setSubmitting(true);
+    try {
+      const response = await apiService.updateScholarship(selectedScholarship.id, formData);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Scholarship updated successfully",
+        });
+        setIsEditScholarshipOpen(false);
+        setSelectedScholarship(null);
+        resetForm();
+        fetchScholarships();
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update scholarship",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating scholarship:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update scholarship",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete scholarship
+  const handleDeleteScholarship = async (scholarshipId: number) => {
+    if (!confirm('Are you sure you want to delete this scholarship? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await apiService.deleteScholarship(scholarshipId);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Scholarship deleted successfully",
+        });
+        fetchScholarships();
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to delete scholarship",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting scholarship:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete scholarship",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -205,17 +317,28 @@ const ScholarshipManagement = () => {
 
   const handleEditScholarship = (scholarship: any) => {
     setSelectedScholarship(scholarship);
+    setFormData({
+      title: scholarship.title || '',
+      institute_id: scholarship.institute_id || '',
+      type: scholarship.type || '',
+      amount: scholarship.amount || '',
+      currency: scholarship.currency || 'USD',
+      deadline: scholarship.deadline || '',
+      max_applications: scholarship.max_applications || '',
+      field: scholarship.field || '',
+      level: scholarship.level || '',
+      description: scholarship.description || '',
+      requirements: scholarship.requirements || '',
+      eligibility: scholarship.eligibility || '',
+      documents: scholarship.documents || '',
+      status: scholarship.status || 'active'
+    });
     setIsEditScholarshipOpen(true);
   };
 
   const handleViewScholarship = (scholarship: any) => {
     setSelectedScholarship(scholarship);
     setIsViewScholarshipOpen(true);
-  };
-
-  const handleDeleteScholarship = (scholarshipId: number) => {
-    // Implement delete functionality
-    console.log('Delete scholarship:', scholarshipId);
   };
 
   return (
@@ -242,18 +365,25 @@ const ScholarshipManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="title">Scholarship Title</Label>
-                  <Input id="title" placeholder="Enter scholarship title" />
+                  <Input 
+                    id="title" 
+                    placeholder="Enter scholarship title" 
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="institute">Institute</Label>
-                  <Select>
+                  <Select value={formData.institute_id} onValueChange={(value) => handleInputChange('institute_id', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select institute" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="utech">University of Technology</SelectItem>
-                      <SelectItem value="scc">State Community College</SelectItem>
-                      <SelectItem value="tii">Tech Institute of Innovation</SelectItem>
+                      {institutes.map((institute) => (
+                        <SelectItem key={institute.id} value={institute.id.toString()}>
+                          {institute.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -261,7 +391,7 @@ const ScholarshipManagement = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="type">Type</Label>
-                  <Select>
+                  <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -275,7 +405,7 @@ const ScholarshipManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="level">Level</Label>
-                  <Select>
+                  <Select value={formData.level} onValueChange={(value) => handleInputChange('level', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
@@ -288,60 +418,119 @@ const ScholarshipManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="field">Field of Study</Label>
-                  <Input id="field" placeholder="e.g., Engineering" />
+                  <Input 
+                    id="field" 
+                    placeholder="e.g., Engineering" 
+                    value={formData.field}
+                    onChange={(e) => handleInputChange('field', e.target.value)}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="amount">Amount</Label>
-                  <Input id="amount" type="number" placeholder="Enter amount" />
+                  <Input 
+                    id="amount" 
+                    type="number" 
+                    placeholder="Enter amount" 
+                    value={formData.amount}
+                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="deadline">Application Deadline</Label>
-                  <Input id="deadline" type="date" />
+                  <Input 
+                    id="deadline" 
+                    type="date" 
+                    value={formData.deadline}
+                    onChange={(e) => handleInputChange('deadline', e.target.value)}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="max-applications">Max Applications</Label>
-                  <Input id="max-applications" type="number" placeholder="Enter max applications" />
+                  <Input 
+                    id="max-applications" 
+                    type="number" 
+                    placeholder="Enter max applications" 
+                    value={formData.max_applications}
+                    onChange={(e) => handleInputChange('max_applications', e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select>
+                  <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Textarea id="description" placeholder="Enter scholarship description" rows={3} />
+                <Textarea 
+                  id="description" 
+                  placeholder="Enter scholarship description" 
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                />
               </div>
               <div>
                 <Label htmlFor="requirements">Requirements</Label>
-                <Textarea id="requirements" placeholder="Enter eligibility requirements" rows={2} />
+                <Textarea 
+                  id="requirements" 
+                  placeholder="Enter eligibility requirements" 
+                  rows={2}
+                  value={formData.requirements}
+                  onChange={(e) => handleInputChange('requirements', e.target.value)}
+                />
               </div>
               <div>
                 <Label htmlFor="eligibility">Eligibility Criteria</Label>
-                <Textarea id="eligibility" placeholder="Enter eligibility criteria" rows={2} />
+                <Textarea 
+                  id="eligibility" 
+                  placeholder="Enter eligibility criteria" 
+                  rows={2}
+                  value={formData.eligibility}
+                  onChange={(e) => handleInputChange('eligibility', e.target.value)}
+                />
               </div>
               <div>
                 <Label htmlFor="documents">Required Documents</Label>
-                <Textarea id="documents" placeholder="Enter required documents" rows={2} />
+                <Textarea 
+                  id="documents" 
+                  placeholder="Enter required documents" 
+                  rows={2}
+                  value={formData.documents}
+                  onChange={(e) => handleInputChange('documents', e.target.value)}
+                />
               </div>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddScholarshipOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsAddScholarshipOpen(false);
+                resetForm();
+              }}>
                 Cancel
               </Button>
-              <Button>Create Scholarship</Button>
+              <Button onClick={handleCreateScholarship} disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Scholarship'
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -377,8 +566,14 @@ const ScholarshipManagement = () => {
       </Card>
 
       {/* Scholarships Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredScholarships.map((scholarship) => (
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading scholarships...</span>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {scholarships.map((scholarship) => (
           <Card key={scholarship.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -424,7 +619,7 @@ const ScholarshipManagement = () => {
               <div className="space-y-4">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <Building2 className="h-4 w-4" />
-                  <span className="truncate">{scholarship.institute}</span>
+                  <span className="truncate">{scholarship.institute?.name || 'N/A'}</span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <BookOpen className="h-4 w-4" />
@@ -443,7 +638,7 @@ const ScholarshipManagement = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Users className="h-4 w-4 text-blue-600" />
-                      <span>{scholarship.applications}/{scholarship.maxApplications}</span>
+                      <span>{scholarship.applications_count || 0}/{scholarship.max_applications}</span>
                     </div>
                   </div>
                   
@@ -472,8 +667,9 @@ const ScholarshipManagement = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* View Scholarship Dialog */}
       <Dialog open={isViewScholarshipOpen} onOpenChange={setIsViewScholarshipOpen}>
@@ -584,18 +780,24 @@ const ScholarshipManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-title">Scholarship Title</Label>
-                  <Input id="edit-title" defaultValue={selectedScholarship.title} />
+                  <Input 
+                    id="edit-title" 
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-institute">Institute</Label>
-                  <Select defaultValue={selectedScholarship.institute}>
+                  <Select value={formData.institute_id} onValueChange={(value) => handleInputChange('institute_id', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="University of Technology">University of Technology</SelectItem>
-                      <SelectItem value="State Community College">State Community College</SelectItem>
-                      <SelectItem value="Tech Institute of Innovation">Tech Institute of Innovation</SelectItem>
+                      {institutes.map((institute) => (
+                        <SelectItem key={institute.id} value={institute.id.toString()}>
+                          {institute.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -603,7 +805,7 @@ const ScholarshipManagement = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="edit-type">Type</Label>
-                  <Select defaultValue={selectedScholarship.type}>
+                  <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -617,7 +819,7 @@ const ScholarshipManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="edit-level">Level</Label>
-                  <Select defaultValue={selectedScholarship.level}>
+                  <Select value={formData.level} onValueChange={(value) => handleInputChange('level', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -630,7 +832,7 @@ const ScholarshipManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="edit-status">Status</Label>
-                  <Select defaultValue={selectedScholarship.status}>
+                  <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -646,24 +848,52 @@ const ScholarshipManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-amount">Amount</Label>
-                  <Input id="edit-amount" type="number" defaultValue={selectedScholarship.amount} />
+                  <Input 
+                    id="edit-amount" 
+                    type="number" 
+                    value={formData.amount}
+                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-deadline">Application Deadline</Label>
-                  <Input id="edit-deadline" type="date" defaultValue={selectedScholarship.deadline} />
+                  <Input 
+                    id="edit-deadline" 
+                    type="date" 
+                    value={formData.deadline}
+                    onChange={(e) => handleInputChange('deadline', e.target.value)}
+                  />
                 </div>
               </div>
               <div>
                 <Label htmlFor="edit-description">Description</Label>
-                <Textarea id="edit-description" defaultValue={selectedScholarship.description} rows={3} />
+                <Textarea 
+                  id="edit-description" 
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  rows={3} 
+                />
               </div>
             </div>
           )}
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsEditScholarshipOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsEditScholarshipOpen(false);
+              setSelectedScholarship(null);
+              resetForm();
+            }}>
               Cancel
             </Button>
-            <Button>Update Scholarship</Button>
+            <Button onClick={handleUpdateScholarship} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Scholarship'
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

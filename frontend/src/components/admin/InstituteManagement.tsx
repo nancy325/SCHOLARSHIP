@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
 import { 
   Search, 
   Plus, 
@@ -46,98 +47,215 @@ const InstituteManagement = () => {
   const [isEditInstituteOpen, setIsEditInstituteOpen] = useState(false);
   const [isViewInstituteOpen, setIsViewInstituteOpen] = useState(false);
   const [selectedInstitute, setSelectedInstitute] = useState(null);
-
-  // Mock data - replace with actual API calls
-  const institutes = [
-    {
-      id: 1,
-      name: 'University of Technology',
-      type: 'university',
-      status: 'verified',
-      email: 'admin@utech.edu',
-      phone: '+1 (555) 123-4567',
-      website: 'https://utech.edu',
-      address: '123 University Ave, New York, NY 10001',
-      description: 'A leading technology university offering cutting-edge programs in engineering and computer science.',
-      established: '1985',
-      accreditation: 'Regional',
-      students: 15000,
-      scholarships: 25,
-      rating: 4.8,
-      contactPerson: 'Dr. Sarah Johnson',
-      contactPhone: '+1 (555) 123-4568',
-      registrationDate: '2024-01-15',
-      lastUpdated: '2024-01-20'
-    },
-    {
-      id: 2,
-      name: 'State Community College',
-      type: 'community_college',
-      status: 'pending',
-      email: 'info@scc.edu',
-      phone: '+1 (555) 987-6543',
-      website: 'https://scc.edu',
-      address: '456 College Blvd, Los Angeles, CA 90210',
-      description: 'A community college providing affordable education and career training programs.',
-      established: '1970',
-      accreditation: 'Regional',
-      students: 8000,
-      scholarships: 15,
-      rating: 4.2,
-      contactPerson: 'Mr. Robert Smith',
-      contactPhone: '+1 (555) 987-6544',
-      registrationDate: '2024-01-10',
-      lastUpdated: '2024-01-18'
-    },
-    {
-      id: 3,
-      name: 'Tech Institute of Innovation',
-      type: 'technical_institute',
-      status: 'verified',
-      email: 'contact@tii.edu',
-      phone: '+1 (555) 456-7890',
-      website: 'https://tii.edu',
-      address: '789 Innovation Dr, Austin, TX 73301',
-      description: 'A specialized technical institute focusing on innovation and entrepreneurship.',
-      established: '2000',
-      accreditation: 'National',
-      students: 5000,
-      scholarships: 30,
-      rating: 4.6,
-      contactPerson: 'Prof. Michael Chen',
-      contactPhone: '+1 (555) 456-7891',
-      registrationDate: '2024-01-05',
-      lastUpdated: '2024-01-20'
-    },
-    {
-      id: 4,
-      name: 'Liberal Arts College',
-      type: 'liberal_arts',
-      status: 'suspended',
-      email: 'admissions@lac.edu',
-      phone: '+1 (555) 789-0123',
-      website: 'https://lac.edu',
-      address: '321 Arts Way, Boston, MA 02101',
-      description: 'A liberal arts college emphasizing critical thinking and creative expression.',
-      established: '1960',
-      accreditation: 'Regional',
-      students: 3000,
-      scholarships: 20,
-      rating: 4.4,
-      contactPerson: 'Dr. Emily Davis',
-      contactPhone: '+1 (555) 789-0124',
-      registrationDate: '2023-12-15',
-      lastUpdated: '2024-01-10'
-    }
-  ];
-
-  const filteredInstitutes = institutes.filter(institute => {
-    const matchesSearch = institute.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         institute.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         institute.address.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || institute.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const [institutes, setInstitutes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [newInstitute, setNewInstitute] = useState({
+    name: '',
+    type: 'university',
+    status: 'pending',
+    email: '',
+    phone: '',
+    website: '',
+    address: '',
+    description: '',
+    established: '',
+    accreditation: '',
+    students: 0,
+    rating: 0,
+    contact_person: '',
+    contact_phone: ''
   });
+  const [editInstitute, setEditInstitute] = useState({
+    name: '',
+    type: 'university',
+    status: 'pending',
+    email: '',
+    phone: '',
+    website: '',
+    address: '',
+    description: '',
+    established: '',
+    accreditation: '',
+    students: 0,
+    rating: 0,
+    contact_person: '',
+    contact_phone: ''
+  });
+
+  // Fetch institutes from API
+  useEffect(() => {
+    fetchInstitutes();
+  }, [searchTerm, statusFilter]);
+
+  const fetchInstitutes = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getInstitutes({
+        search: searchTerm,
+        status: statusFilter,
+        page: pagination.current_page
+      });
+      
+      if (response.success) {
+        setInstitutes(response.data.data);
+        setPagination({
+          current_page: response.data.current_page,
+          last_page: response.data.last_page,
+          total: response.data.total
+        });
+      } else {
+        console.error('Failed to fetch institutes:', response.message);
+      }
+    } catch (error) {
+      console.error('Error fetching institutes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddInstitute = async () => {
+    try {
+      // Prepare data for API - convert numbers and handle empty strings
+      const instituteData = {
+        name: newInstitute.name.trim(),
+        type: newInstitute.type,
+        email: newInstitute.email.trim(),
+        phone: newInstitute.phone.trim() || null,
+        website: newInstitute.website.trim() || null,
+        address: newInstitute.address.trim() || null,
+        description: newInstitute.description.trim() || null,
+        established: newInstitute.established.trim() || null,
+        accreditation: newInstitute.accreditation.trim() || null,
+        students: parseInt(newInstitute.students.toString()) || 0,
+        rating: parseFloat(newInstitute.rating.toString()) || 0,
+        contact_person: newInstitute.contact_person.trim() || null,
+        contact_phone: newInstitute.contact_phone.trim() || null,
+        status: newInstitute.status
+      };
+
+      const response = await apiService.createInstitute(instituteData);
+      if (response.success) {
+        setIsAddInstituteOpen(false);
+        setNewInstitute({
+          name: '',
+          type: 'university',
+          status: 'pending',
+          email: '',
+          phone: '',
+          website: '',
+          address: '',
+          description: '',
+          established: '',
+          accreditation: '',
+          students: 0,
+          rating: 0,
+          contact_person: '',
+          contact_phone: ''
+        });
+        fetchInstitutes(); // Refresh the list
+        alert('Institute created successfully!');
+      } else {
+        alert(response.message || 'Failed to create institute');
+      }
+    } catch (error) {
+      console.error('Failed to create institute:', error);
+      alert('Failed to create institute. Please check the form data and try again.');
+    }
+  };
+
+  const handleEditInstitute = (institute: any) => {
+    setSelectedInstitute(institute);
+    setEditInstitute({
+      name: institute.name || '',
+      type: institute.type || 'university',
+      status: institute.status || 'pending',
+      email: institute.email || '',
+      phone: institute.phone || '',
+      website: institute.website || '',
+      address: institute.address || '',
+      description: institute.description || '',
+      established: institute.established || '',
+      accreditation: institute.accreditation || '',
+      students: institute.students || 0,
+      rating: institute.rating || 0,
+      contact_person: institute.contact_person || '',
+      contact_phone: institute.contact_phone || ''
+    });
+
+    setIsEditInstituteOpen(true);
+  };
+
+  const handleUpdateInstitute = async () => {
+    try {
+      // Prepare data for API - convert numbers and handle empty strings
+      const instituteData = {
+        name: editInstitute.name.trim(),
+        type: editInstitute.type,
+        email: editInstitute.email.trim(),
+        phone: editInstitute.phone.trim() || null,
+        website: editInstitute.website.trim() || null,
+        address: editInstitute.address.trim() || null,
+        description: editInstitute.description.trim() || null,
+        established: editInstitute.established.trim() || null,
+        accreditation: editInstitute.accreditation.trim() || null,
+        students: parseInt(editInstitute.students.toString()) || 0,
+        rating: parseFloat(editInstitute.rating.toString()) || 0,
+        contact_person: editInstitute.contact_person.trim() || null,
+        contact_phone: editInstitute.contact_phone.trim() || null,
+        status: editInstitute.status
+      };
+
+      const response = await apiService.updateInstitute(selectedInstitute.id, instituteData);
+      if (response.success) {
+        setIsEditInstituteOpen(false);
+        fetchInstitutes(); // Refresh the list
+        alert('Institute updated successfully!');
+      } else {
+        alert(response.message || 'Failed to update institute');
+      }
+    } catch (error) {
+      console.error('Failed to update institute:', error);
+      alert('Failed to update institute. Please check the form data and try again.');
+    }
+  };
+
+  const handleViewInstitute = async (institute: any) => {
+    try {
+      const response = await apiService.getInstitute(institute.id);
+      if (response.success) {
+        setSelectedInstitute(response.data);
+        setIsViewInstituteOpen(true);
+      } else {
+        console.error('API response not successful:', response);
+        // Fallback to the institute data we already have
+        setSelectedInstitute(institute);
+        setIsViewInstituteOpen(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch institute details:', error);
+      // Fallback to the institute data we already have
+      setSelectedInstitute(institute);
+      setIsViewInstituteOpen(true);
+    }
+  };
+
+  const handleDeleteInstitute = async (instituteId: number) => {
+    if (window.confirm('Are you sure you want to delete this institute?')) {
+      try {
+        const response = await apiService.deleteInstitute(instituteId);
+        if (response.success) {
+          fetchInstitutes(); // Refresh the list
+          alert('Institute deleted successfully!');
+        } else {
+          alert(response.message || 'Failed to delete institute');
+        }
+      } catch (error) {
+        console.error('Failed to delete institute:', error);
+        alert('Failed to delete institute. Please try again.');
+      }
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -146,9 +264,9 @@ const InstituteManagement = () => {
       case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       case 'suspended':
-        return <Badge variant="destructive">Suspended</Badge>;
+        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
       case 'rejected':
-        return <Badge variant="secondary">Rejected</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">Rejected</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -159,9 +277,10 @@ const InstituteManagement = () => {
       case 'university':
         return <Badge className="bg-blue-100 text-blue-800">University</Badge>;
       case 'community_college':
-        return <Badge className="bg-green-100 text-green-800">Community College</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">Community College</Badge>;
       case 'technical_institute':
-        return <Badge className="bg-purple-100 text-purple-800">Technical Institute</Badge>;
+        return <Badge className="bg-green-100 text-green-800">Technical Institute</Badge>;
+
       case 'liberal_arts':
         return <Badge className="bg-orange-100 text-orange-800">Liberal Arts</Badge>;
       default:
@@ -169,20 +288,6 @@ const InstituteManagement = () => {
     }
   };
 
-  const handleEditInstitute = (institute: any) => {
-    setSelectedInstitute(institute);
-    setIsEditInstituteOpen(true);
-  };
-
-  const handleViewInstitute = (institute: any) => {
-    setSelectedInstitute(institute);
-    setIsViewInstituteOpen(true);
-  };
-
-  const handleDeleteInstitute = (instituteId: number) => {
-    // Implement delete functionality
-    console.log('Delete institute:', instituteId);
-  };
 
   return (
     <div className="space-y-6">
@@ -207,60 +312,158 @@ const InstituteManagement = () => {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Institute Name</Label>
-                  <Input id="name" placeholder="Enter institute name" />
+                  <Label htmlFor="name">Institute Name *</Label>
+                  <Input 
+                    id="name" 
+                    value={newInstitute.name}
+                    onChange={(e) => setNewInstitute({...newInstitute, name: e.target.value})}
+                    placeholder="Enter institute name"
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="type">Institute Type</Label>
-                  <Select>
+                  <Label htmlFor="type">Type *</Label>
+                  <Select value={newInstitute.type} onValueChange={(value) => setNewInstitute({...newInstitute, type: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="university">University</SelectItem>
                       <SelectItem value="community_college">Community College</SelectItem>
                       <SelectItem value="technical_institute">Technical Institute</SelectItem>
-                      <SelectItem value="liberal_arts">Liberal Arts College</SelectItem>
+                      <SelectItem value="liberal_arts">Liberal Arts</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Enter email address" />
+                  <Label htmlFor="email">Email *</Label>
+                  <Input 
+                    id="email" 
+                    type="email"
+                    value={newInstitute.email}
+                    onChange={(e) => setNewInstitute({...newInstitute, email: e.target.value})}
+                    placeholder="Enter email address"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="Enter phone number" />
+                  <Input 
+                    id="phone" 
+                    value={newInstitute.phone}
+                    onChange={(e) => setNewInstitute({...newInstitute, phone: e.target.value})}
+                    placeholder="Enter phone number"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="website">Website</Label>
-                  <Input id="website" placeholder="Enter website URL" />
+                  <Input 
+                    id="website" 
+                    value={newInstitute.website}
+                    onChange={(e) => setNewInstitute({...newInstitute, website: e.target.value})}
+                    placeholder="Enter website URL"
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="established">Established Year</Label>
-                  <Input id="established" placeholder="Enter year" />
+                  <Label htmlFor="established">Established</Label>
+                  <Input 
+                    id="established" 
+                    value={newInstitute.established}
+                    onChange={(e) => setNewInstitute({...newInstitute, established: e.target.value})}
+                    placeholder="Enter establishment year"
+                  />
                 </div>
               </div>
               <div>
                 <Label htmlFor="address">Address</Label>
-                <Input id="address" placeholder="Enter full address" />
+                <Textarea 
+                  id="address" 
+                  value={newInstitute.address}
+                  onChange={(e) => setNewInstitute({...newInstitute, address: e.target.value})}
+                  placeholder="Enter full address"
+                  rows={2}
+                />
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Textarea id="description" placeholder="Enter institute description" rows={3} />
+                <Textarea 
+                  id="description" 
+                  value={newInstitute.description}
+                  onChange={(e) => setNewInstitute({...newInstitute, description: e.target.value})}
+                  placeholder="Enter institute description"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="accreditation">Accreditation</Label>
+                  <Input 
+                    id="accreditation" 
+                    value={newInstitute.accreditation}
+                    onChange={(e) => setNewInstitute({...newInstitute, accreditation: e.target.value})}
+                    placeholder="Enter accreditation info"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="students">Number of Students</Label>
+                  <Input 
+                    id="students" 
+                    type="number"
+                    value={newInstitute.students}
+                    onChange={(e) => setNewInstitute({...newInstitute, students: parseInt(e.target.value) || 0})}
+                    placeholder="Enter number of students"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="rating">Rating</Label>
+                  <Input 
+                    id="rating" 
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    value={newInstitute.rating}
+                    onChange={(e) => setNewInstitute({...newInstitute, rating: parseFloat(e.target.value) || 0})}
+                    placeholder="Enter rating (0-5)"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={newInstitute.status} onValueChange={(value) => setNewInstitute({...newInstitute, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="verified">Verified</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="contact-person">Contact Person</Label>
-                  <Input id="contact-person" placeholder="Enter contact person name" />
+                  <Input 
+                    id="contact-person" 
+                    value={newInstitute.contact_person}
+                    onChange={(e) => setNewInstitute({...newInstitute, contact_person: e.target.value})}
+                    placeholder="Enter contact person name"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="contact-phone">Contact Phone</Label>
-                  <Input id="contact-phone" placeholder="Enter contact phone" />
+                  <Input 
+                    id="contact-phone" 
+                    value={newInstitute.contact_phone}
+                    onChange={(e) => setNewInstitute({...newInstitute, contact_phone: e.target.value})}
+                    placeholder="Enter contact phone number"
+                  />
                 </div>
               </div>
             </div>
@@ -268,125 +471,120 @@ const InstituteManagement = () => {
               <Button variant="outline" onClick={() => setIsAddInstituteOpen(false)}>
                 Cancel
               </Button>
-              <Button>Register Institute</Button>
+              <Button onClick={handleAddInstitute}>Create Institute</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search institutes by name, email, or address..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search institutes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="verified">Verified</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Institutes Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredInstitutes.map((institute) => (
-          <Card key={institute.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading ? (
+          <div className="col-span-full text-center py-8">
+            <div className="text-sm text-gray-500">Loading institutes...</div>
+          </div>
+        ) : institutes.length > 0 ? (
+          institutes.map((institute: any) => (
+            <Card key={institute.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
                     <CardTitle className="text-lg">{institute.name}</CardTitle>
-                    <div className="flex items-center space-x-2 mt-1">
+                    <CardDescription className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
                       {getTypeBadge(institute.type)}
-                      {getStatusBadge(institute.status)}
-                    </div>
+                    </CardDescription>
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleViewInstitute(institute)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditInstitute(institute)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteInstitute(institute.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleViewInstitute(institute)}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleEditInstitute(institute)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Institute
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleDeleteInstitute(institute.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Institute
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Mail className="h-4 w-4" />
-                  <span>{institute.email}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Phone className="h-4 w-4" />
-                  <span>{institute.phone}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4" />
-                  <span className="truncate">{institute.address}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Globe className="h-4 w-4" />
-                  <span className="truncate">{institute.website}</span>
-                </div>
-                
-                <div className="pt-2 border-t">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Mail className="h-4 w-4" />
+                    <span>{institute.email}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Phone className="h-4 w-4" />
+                    <span>{institute.phone || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <MapPin className="h-4 w-4" />
+                    <span>{institute.address || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1">
                       <Users className="h-4 w-4 text-gray-400" />
-                      <span>{institute.students.toLocaleString()} students</span>
+                      <span className="text-sm text-gray-600">{institute.students?.toLocaleString() || 0} students</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <GraduationCap className="h-4 w-4 text-gray-400" />
-                      <span>{institute.scholarships} scholarships</span>
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      <span className="text-sm font-medium">{institute.rating || 0}</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span className="text-sm font-medium">{institute.rating}</span>
-                    <span className="text-xs text-gray-500">({institute.established})</span>
+                  <div className="flex items-center justify-between">
+                    {getStatusBadge(institute.status)}
+                    <div className="text-xs text-gray-500">
+                      {institute.created_at ? new Date(institute.created_at).toLocaleDateString() : 'N/A'}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-8">
+            <div className="text-sm text-gray-500">No institutes found</div>
+          </div>
+        )}
       </div>
 
       {/* View Institute Dialog */}
@@ -449,38 +647,42 @@ const InstituteManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Contact Person</Label>
-                  <div className="text-sm font-medium">{selectedInstitute.contactPerson}</div>
+                  <div className="text-sm font-medium">{selectedInstitute.contact_person}</div>
                 </div>
                 <div>
                   <Label>Contact Phone</Label>
-                  <div className="text-sm font-medium">{selectedInstitute.contactPhone}</div>
+                  <div className="text-sm font-medium">{selectedInstitute.contact_phone}</div>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Students</Label>
-                  <div className="text-sm font-medium">{selectedInstitute.students.toLocaleString()}</div>
+                  <div className="text-sm font-medium">{selectedInstitute.students?.toLocaleString() || 0}</div>
                 </div>
                 <div>
                   <Label>Scholarships</Label>
-                  <div className="text-sm font-medium">{selectedInstitute.scholarships}</div>
+                  <div className="text-sm font-medium">{selectedInstitute.scholarships_count || 0}</div>
                 </div>
                 <div>
                   <Label>Rating</Label>
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span className="text-sm font-medium">{selectedInstitute.rating}</span>
+                    <span className="text-sm font-medium">{selectedInstitute.rating || 0}</span>
                   </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Registration Date</Label>
-                  <div className="text-sm font-medium">{selectedInstitute.registrationDate}</div>
+                  <div className="text-sm font-medium">
+                    {selectedInstitute.created_at ? new Date(selectedInstitute.created_at).toLocaleDateString() : 'N/A'}
+                  </div>
                 </div>
                 <div>
                   <Label>Last Updated</Label>
-                  <div className="text-sm font-medium">{selectedInstitute.lastUpdated}</div>
+                  <div className="text-sm font-medium">
+                    {selectedInstitute.updated_at ? new Date(selectedInstitute.updated_at).toLocaleDateString() : 'N/A'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -498,18 +700,22 @@ const InstituteManagement = () => {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Edit Institute</DialogTitle>
-            <DialogDescription>Update institute information and status</DialogDescription>
+            <DialogDescription>Update institute information</DialogDescription>
           </DialogHeader>
           {selectedInstitute && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-name">Institute Name</Label>
-                  <Input id="edit-name" defaultValue={selectedInstitute.name} />
+                  <Label htmlFor="edit-name">Institute Name *</Label>
+                  <Input 
+                    id="edit-name" 
+                    value={editInstitute.name}
+                    onChange={(e) => setEditInstitute({...editInstitute, name: e.target.value})}
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="edit-type">Institute Type</Label>
-                  <Select defaultValue={selectedInstitute.type}>
+                  <Label htmlFor="edit-type">Type *</Label>
+                  <Select value={editInstitute.type} onValueChange={(value) => setEditInstitute({...editInstitute, type: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -517,29 +723,101 @@ const InstituteManagement = () => {
                       <SelectItem value="university">University</SelectItem>
                       <SelectItem value="community_college">Community College</SelectItem>
                       <SelectItem value="technical_institute">Technical Institute</SelectItem>
-                      <SelectItem value="liberal_arts">Liberal Arts College</SelectItem>
+                      <SelectItem value="liberal_arts">Liberal Arts</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input id="edit-email" type="email" defaultValue={selectedInstitute.email} />
+                  <Label htmlFor="edit-email">Email *</Label>
+                  <Input 
+                    id="edit-email" 
+                    type="email"
+                    value={editInstitute.email}
+                    onChange={(e) => setEditInstitute({...editInstitute, email: e.target.value})}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-phone">Phone</Label>
-                  <Input id="edit-phone" defaultValue={selectedInstitute.phone} />
+                  <Input 
+                    id="edit-phone" 
+                    value={editInstitute.phone}
+                    onChange={(e) => setEditInstitute({...editInstitute, phone: e.target.value})}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-website">Website</Label>
-                  <Input id="edit-website" defaultValue={selectedInstitute.website} />
+                  <Input 
+                    id="edit-website" 
+                    value={editInstitute.website}
+                    onChange={(e) => setEditInstitute({...editInstitute, website: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-established">Established</Label>
+                  <Input 
+                    id="edit-established" 
+                    value={editInstitute.established}
+                    onChange={(e) => setEditInstitute({...editInstitute, established: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-address">Address</Label>
+                <Textarea 
+                  id="edit-address" 
+                  value={editInstitute.address}
+                  onChange={(e) => setEditInstitute({...editInstitute, address: e.target.value})}
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea 
+                  id="edit-description" 
+                  value={editInstitute.description}
+                  onChange={(e) => setEditInstitute({...editInstitute, description: e.target.value})}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-accreditation">Accreditation</Label>
+                  <Input 
+                    id="edit-accreditation" 
+                    value={editInstitute.accreditation}
+                    onChange={(e) => setEditInstitute({...editInstitute, accreditation: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-students">Number of Students</Label>
+                  <Input 
+                    id="edit-students" 
+                    type="number"
+                    value={editInstitute.students}
+                    onChange={(e) => setEditInstitute({...editInstitute, students: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-rating">Rating</Label>
+                  <Input 
+                    id="edit-rating" 
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    value={editInstitute.rating}
+                    onChange={(e) => setEditInstitute({...editInstitute, rating: parseFloat(e.target.value) || 0})}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-status">Status</Label>
-                  <Select defaultValue={selectedInstitute.status}>
+                  <Select value={editInstitute.status} onValueChange={(value) => setEditInstitute({...editInstitute, status: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -552,13 +830,23 @@ const InstituteManagement = () => {
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="edit-address">Address</Label>
-                <Input id="edit-address" defaultValue={selectedInstitute.address} />
-              </div>
-              <div>
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea id="edit-description" defaultValue={selectedInstitute.description} rows={3} />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-contact-person">Contact Person</Label>
+                  <Input 
+                    id="edit-contact-person" 
+                    value={editInstitute.contact_person}
+                    onChange={(e) => setEditInstitute({...editInstitute, contact_person: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-contact-phone">Contact Phone</Label>
+                  <Input 
+                    id="edit-contact-phone" 
+                    value={editInstitute.contact_phone}
+                    onChange={(e) => setEditInstitute({...editInstitute, contact_phone: e.target.value})}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -566,7 +854,7 @@ const InstituteManagement = () => {
             <Button variant="outline" onClick={() => setIsEditInstituteOpen(false)}>
               Cancel
             </Button>
-            <Button>Update Institute</Button>
+            <Button onClick={handleUpdateInstitute}>Update Institute</Button>
           </div>
         </DialogContent>
       </Dialog>

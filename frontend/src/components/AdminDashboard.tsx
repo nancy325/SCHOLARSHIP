@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '@/services/api';
 import { 
   Users, 
   Building2, 
@@ -30,21 +31,56 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleLogout = () => {
-    // Implement your logout logic here
-    console.log('Logging out...');
-    // Typically: clear auth tokens, redirect to login, etc.
-    localStorage.removeItem('authToken'); // example
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [statsResponse, activityResponse] = await Promise.all([
+          apiService.getDashboardStats(),
+          apiService.getRecentActivity()
+        ]);
 
-    // Redirect to landing page
+        if (statsResponse.success) {
+          setDashboardStats(statsResponse.data);
+        }
+
+        if (activityResponse.success) {
+          setRecentActivity(activityResponse.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still redirect even if logout API fails
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
     navigate('/');
+    }
   };
 
-  const stats = [
+  const stats = dashboardStats ? [
     {
       title: 'Total Users',
-      value: '2,847',
+      value: dashboardStats.total_users?.toLocaleString() || '0',
       change: '+12%',
       changeType: 'positive',
       icon: Users,
@@ -53,7 +89,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Registered Institutes',
-      value: '156',
+      value: dashboardStats.total_institutes?.toLocaleString() || '0',
       change: '+8%',
       changeType: 'positive',
       icon: Building2,
@@ -62,23 +98,23 @@ const AdminDashboard = () => {
     },
     {
       title: 'Active Scholarships',
-      value: '89',
+      value: dashboardStats.active_scholarships?.toLocaleString() || '0',
       change: '+23%',
       changeType: 'positive',
       icon: GraduationCap,
       description: 'Available opportunities',
       color: 'bg-purple-100 text-purple-600'
-    },
-    {
-      title: 'Applications',
-      value: '1,234',
-      change: '+18%',
-      changeType: 'positive',
-      icon: Activity,
-      description: 'This month',
-      color: 'bg-amber-100 text-amber-600'
     }
-  ];
+    // {
+    //   title: 'Applications',
+    //   value: dashboardStats.total_applications?.toLocaleString() || '0',
+    //   change: '+18%',
+    //   changeType: 'positive',
+    //   icon: Activity,
+    //   description: 'This month',
+    //   color: 'bg-amber-100 text-amber-600'
+    // }
+  ] : [];
 
   const navigation = [
     { name: 'Overview', icon: Home, tab: 'overview' },
@@ -135,12 +171,12 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-4">
-                    {[
-                      { action: 'New user registered', time: '2 minutes ago', type: 'user' },
-                      { action: 'Institute profile updated', time: '15 minutes ago', type: 'institute' },
-                      { action: 'New scholarship added', time: '1 hour ago', type: 'scholarship' },
-                      { action: 'Application submitted', time: '2 hours ago', type: 'application' }
-                    ].map((item, index) => (
+                    {loading ? (
+                      <div className="text-center py-4">
+                        <div className="text-sm text-gray-500">Loading recent activity...</div>
+                      </div>
+                    ) : recentActivity.length > 0 ? (
+                      recentActivity.slice(0, 4).map((item, index) => (
                       <div key={index} className="flex items-center justify-between py-2 group">
                         <div className="flex items-center space-x-3">
                           <div className={`w-2 h-2 rounded-full ${
@@ -155,7 +191,12 @@ const AdminDashboard = () => {
                         </div>
                         <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
                       </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <div className="text-sm text-gray-500">No recent activity</div>
+                      </div>
+                    )}
                   </div>
                   <Button variant="ghost" className="w-full mt-4 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                     View all activity

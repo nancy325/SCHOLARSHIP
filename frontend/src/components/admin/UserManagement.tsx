@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
 import { 
   Search, 
   Filter, 
@@ -44,110 +45,183 @@ const UserManagement = () => {
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [isViewUserOpen, setIsViewUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-
-  // Mock data - replace with actual API calls
-  const users = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567',
-      status: 'active',
-      role: 'student',
-      institute: 'University of Technology',
-      registrationDate: '2024-01-15',
-      lastLogin: '2024-01-20',
-      applications: 5,
-      location: 'New York, NY'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      phone: '+1 (555) 987-6543',
-      status: 'active',
-      role: 'student',
-      institute: 'State University',
-      registrationDate: '2024-01-10',
-      lastLogin: '2024-01-19',
-      applications: 3,
-      location: 'Los Angeles, CA'
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      email: 'mike.johnson@example.com',
-      phone: '+1 (555) 456-7890',
-      status: 'inactive',
-      role: 'student',
-      institute: 'Community College',
-      registrationDate: '2023-12-01',
-      lastLogin: '2024-01-05',
-      applications: 0,
-      location: 'Chicago, IL'
-    },
-    {
-      id: 4,
-      name: 'Sarah Wilson',
-      email: 'sarah.wilson@example.com',
-      phone: '+1 (555) 789-0123',
-      status: 'active',
-      role: 'institute_admin',
-      institute: 'Tech Institute',
-      registrationDate: '2024-01-05',
-      lastLogin: '2024-01-20',
-      applications: 0,
-      location: 'Austin, TX'
-    }
-  ];
-
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.institute.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [institutes, setInstitutes] = useState([]);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    category: 'undergraduate',
+    is_admin: false,
+    institute_id: null
+  });
+  const [editUser, setEditUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    category: 'undergraduate',
+    is_admin: false,
+    institute_id: null
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
-      case 'suspended':
-        return <Badge variant="destructive">Suspended</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  // Fetch users from API
+  useEffect(() => {
+    fetchUsers();
+    fetchInstitutes();
+  }, [searchTerm, statusFilter]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getUsers({
+        search: searchTerm || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        page: pagination.current_page
+      });
+
+      if (response.success) {
+        setUsers(response.data.data || []);
+        setPagination({
+          current_page: response.data.current_page || 1,
+          last_page: response.data.last_page || 1,
+          total: response.data.total || 0
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'student':
-        return <Badge variant="outline">Student</Badge>;
-      case 'institute_admin':
-        return <Badge className="bg-blue-100 text-blue-800">Institute Admin</Badge>;
-      case 'admin':
-        return <Badge className="bg-purple-100 text-purple-800">Admin</Badge>;
-      default:
-        return <Badge variant="outline">{role}</Badge>;
+  const fetchInstitutes = async () => {
+    try {
+      const response = await apiService.getInstitutes();
+      if (response.success) {
+        setInstitutes(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch institutes:', error);
     }
+  };
+
+  const handleCreateUser = async () => {
+    try {
+      const response = await apiService.createUser(newUser);
+      if (response.success) {
+        setIsAddUserOpen(false);
+        setNewUser({
+          name: '',
+          email: '',
+          password: '',
+          category: 'undergraduate',
+          is_admin: false,
+          institute_id: null
+        });
+        fetchUsers(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Failed to create user:', error);
+    }
+  };
+
+  // No need for client-side filtering since API handles it
+  const filteredUsers = users;
+
+  const getStatusBadge = (category: string) => {
+    switch (category) {
+      case 'undergraduate':
+        return <Badge className="bg-green-100 text-green-800">Undergraduate</Badge>;
+      case 'graduate':
+        return <Badge className="bg-blue-100 text-blue-800">Graduate</Badge>;
+      case 'high-school':
+        return <Badge className="bg-yellow-100 text-yellow-800">High School</Badge>;
+      case 'diploma':
+        return <Badge className="bg-purple-100 text-purple-800">Diploma</Badge>;
+      case 'postgraduate':
+        return <Badge className="bg-indigo-100 text-indigo-800">Postgraduate</Badge>;
+      default:
+        return <Badge variant="outline">{category}</Badge>;
+    }
+  };
+
+  const getRoleBadge = (isAdmin: boolean) => {
+    if (isAdmin) {
+      return <Badge className="bg-purple-100 text-purple-800">Admin</Badge>;
+    }
+    return <Badge variant="outline">Student</Badge>;
   };
 
   const handleEditUser = (user: any) => {
     setSelectedUser(user);
+    setEditUser({
+      name: user.name,
+      email: user.email,
+      password: '',
+      category: user.category,
+      is_admin: user.is_admin,
+      institute_id: user.institute_id
+    });
     setIsEditUserOpen(true);
   };
 
-  const handleViewUser = (user: any) => {
-    setSelectedUser(user);
-    setIsViewUserOpen(true);
+  const handleUpdateUser = async () => {
+    try {
+      const updateData = { ...editUser };
+      if (!updateData.password) {
+        delete updateData.password; // Don't send empty password
+      }
+      
+      const response = await apiService.updateUser(selectedUser.id, updateData);
+      if (response.success) {
+        setIsEditUserOpen(false);
+        fetchUsers(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    }
   };
 
-  const handleDeleteUser = (userId: number) => {
-    // Implement delete functionality
-    console.log('Delete user:', userId);
+  const handleViewUser = async (user: any) => {
+    try {
+      const response = await apiService.getUser(user.id);
+      if (response.success) {
+        setSelectedUser(response.data);
+        setIsViewUserOpen(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+      // Fallback to the user data we already have
+    setSelectedUser(user);
+    setIsViewUserOpen(true);
+    }
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    // Get current user from localStorage
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Prevent admin from deleting themselves
+    if (currentUser.id === userId) {
+      alert('You cannot delete your own account. Please ask another admin to delete your account.');
+      return;
+    }
+    
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        const response = await apiService.deleteUser(userId);
+        if (response.success) {
+          fetchUsers(); // Refresh the list
+        } else {
+          alert(response.message || 'Failed to delete user');
+        }
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+        alert('Failed to delete user. Please try again.');
+      }
+    }
   };
 
   return (
@@ -174,46 +248,91 @@ const UserManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="Enter full name" />
+                  <Input 
+                    id="name" 
+                    placeholder="Enter full name" 
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Enter email address" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Enter email address" 
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="Enter phone number" />
+                  <Label htmlFor="password">Password</Label>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="Enter password" 
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="role">Role</Label>
-                  <Select>
+                  <Label htmlFor="category">Category</Label>
+                  <Select 
+                    value={newUser.category} 
+                    onValueChange={(value) => setNewUser({...newUser, category: value})}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="institute_admin">Institute Admin</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="high-school">High School</SelectItem>
+                      <SelectItem value="diploma">Diploma</SelectItem>
+                      <SelectItem value="undergraduate">Undergraduate</SelectItem>
+                      <SelectItem value="postgraduate">Postgraduate</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="institute">Institute</Label>
-                <Input id="institute" placeholder="Enter institute name" />
+                  <Select 
+                    value={newUser.institute_id?.toString() || 'none'} 
+                    onValueChange={(value) => setNewUser({...newUser, institute_id: value === 'none' ? null : parseInt(value)})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select institute" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Institute</SelectItem>
+                      {institutes.map((institute: any) => (
+                        <SelectItem key={institute.id} value={institute.id.toString()}>
+                          {institute.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_admin"
+                    checked={newUser.is_admin}
+                    onChange={(e) => setNewUser({...newUser, is_admin: e.target.checked})}
+                    className="rounded"
+                  />
+                  <Label htmlFor="is_admin">Admin User</Label>
               </div>
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Input id="location" placeholder="Enter city, state" />
               </div>
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
                 Cancel
               </Button>
-              <Button>Create User</Button>
+              <Button onClick={handleCreateUser}>Create User</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -238,9 +357,12 @@ const UserManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="undergraduate">Undergraduate</SelectItem>
+                <SelectItem value="graduate">Graduate</SelectItem>
+                <SelectItem value="high-school">High School</SelectItem>
+                <SelectItem value="diploma">Diploma</SelectItem>
+                <SelectItem value="postgraduate">Postgraduate</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -255,6 +377,11 @@ const UserManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="text-sm text-gray-500">Loading users...</div>
+              </div>
+            ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b">
@@ -263,13 +390,14 @@ const UserManagement = () => {
                   <th className="text-left py-3 px-4 font-medium">Institute</th>
                   <th className="text-left py-3 px-4 font-medium">Status</th>
                   <th className="text-left py-3 px-4 font-medium">Role</th>
-                  <th className="text-left py-3 px-4 font-medium">Applications</th>
+                  {/* <th className="text-left py-3 px-4 font-medium">Applications</th> */}
                   <th className="text-left py-3 px-4 font-medium">Last Login</th>
                   <th className="text-left py-3 px-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user) => (
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-3">
@@ -289,36 +417,36 @@ const UserManagement = () => {
                           {user.email}
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
-                          <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                          {user.phone}
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {new Date(user.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
                       <div className="space-y-1">
-                        <div className="font-medium">{user.institute}</div>
+                        <div className="font-medium">{user.institute?.name || 'No Institute'}</div>
                         <div className="flex items-center text-sm text-gray-500">
                           <MapPin className="h-3 w-3 mr-1" />
-                          {user.location}
+                          {user.institute?.address || 'N/A'}
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      {getStatusBadge(user.status)}
+                      {getStatusBadge(user.category)}
                     </td>
                     <td className="py-3 px-4">
-                      {getRoleBadge(user.role)}
+                      {getRoleBadge(user.is_admin)}
                     </td>
-                    <td className="py-3 px-4">
+                    {/* <td className="py-3 px-4">
                       <div className="text-center">
-                        <div className="font-medium">{user.applications}</div>
+                        <div className="font-medium">{user.applications?.length || 0}</div>
                         <div className="text-sm text-gray-500">submitted</div>
                       </div>
-                    </td>
+                    </td> */}
                     <td className="py-3 px-4">
                       <div className="space-y-1">
-                        <div className="text-sm">{user.lastLogin}</div>
-                        <div className="text-xs text-gray-500">Registered: {user.registrationDate}</div>
+                        <div className="text-sm">{new Date(user.updated_at).toLocaleDateString()}</div>
+                        <div className="text-xs text-gray-500">Registered: {new Date(user.created_at).toLocaleDateString()}</div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -348,9 +476,17 @@ const UserManagement = () => {
                       </DropdownMenu>
                     </td>
                   </tr>
-                ))}
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="text-center py-8">
+                        <div className="text-sm text-gray-500">No users found</div>
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -376,44 +512,58 @@ const UserManagement = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Phone</Label>
-                  <div className="text-sm font-medium">{selectedUser.phone}</div>
+                  <Label>User ID</Label>
+                  <div className="text-sm font-medium">{selectedUser.id}</div>
                 </div>
                 <div>
                   <Label>Role</Label>
-                  <div>{getRoleBadge(selectedUser.role)}</div>
+                  <div>{getRoleBadge(selectedUser.is_admin)}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Category</Label>
+                  <div>{getStatusBadge(selectedUser.category)}</div>
+                </div>
                 <div>
                   <Label>Institute</Label>
-                  <div className="text-sm font-medium">{selectedUser.institute}</div>
-                </div>
-                <div>
-                  <Label>Location</Label>
-                  <div className="text-sm font-medium">{selectedUser.location}</div>
+                  <div className="text-sm font-medium">{selectedUser.institute?.name || 'No Institute'}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Status</Label>
-                  <div>{getStatusBadge(selectedUser.status)}</div>
-                </div>
-                <div>
+                {/* <div>
                   <Label>Applications</Label>
-                  <div className="text-sm font-medium">{selectedUser.applications}</div>
+                  <div className="text-sm font-medium">{selectedUser.applications?.length || 0}</div>
+                </div> */}
+                <div>
+                  <Label>Institute Address</Label>
+                  <div className="text-sm font-medium">{selectedUser.institute?.address || 'N/A'}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Registration Date</Label>
-                  <div className="text-sm font-medium">{selectedUser.registrationDate}</div>
+                  <div className="text-sm font-medium">{new Date(selectedUser.created_at).toLocaleDateString()}</div>
                 </div>
                 <div>
-                  <Label>Last Login</Label>
-                  <div className="text-sm font-medium">{selectedUser.lastLogin}</div>
+                  <Label>Last Updated</Label>
+                  <div className="text-sm font-medium">{new Date(selectedUser.updated_at).toLocaleDateString()}</div>
                 </div>
               </div>
+              {selectedUser.applications && selectedUser.applications.length > 0 && (
+                <div>
+                  <Label>Recent Applications</Label>
+                  <div className="space-y-2 mt-2">
+                    {selectedUser.applications.slice(0, 3).map((app: any, index: number) => (
+                      <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                        <div className="font-medium">{app.scholarship?.title}</div>
+                        <div className="text-gray-600">Status: {app.status}</div>
+                        <div className="text-gray-600">Submitted: {new Date(app.created_at).toLocaleDateString()}</div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              )}
             </div>
           )}
           <div className="flex justify-end">
@@ -431,67 +581,93 @@ const UserManagement = () => {
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>Update user information and permissions</DialogDescription>
           </DialogHeader>
-          {selectedUser && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-name">Full Name</Label>
-                  <Input id="edit-name" defaultValue={selectedUser.name} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input id="edit-email" type="email" defaultValue={selectedUser.email} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-phone">Phone</Label>
-                  <Input id="edit-phone" defaultValue={selectedUser.phone} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-role">Role</Label>
-                  <Select defaultValue={selectedUser.role}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="institute_admin">Institute Admin</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-institute">Institute</Label>
-                  <Input id="edit-institute" defaultValue={selectedUser.institute} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select defaultValue={selectedUser.status}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-name">Full Name</Label>
+                <Input 
+                  id="edit-name" 
+                  value={editUser.name || ''}
+                  onChange={(e) => setEditUser({...editUser, name: e.target.value})}
+                />
               </div>
               <div>
-                <Label htmlFor="edit-location">Location</Label>
-                <Input id="edit-location" defaultValue={selectedUser.location} />
+                <Label htmlFor="edit-email">Email</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email" 
+                  value={editUser.email || ''}
+                  onChange={(e) => setEditUser({...editUser, email: e.target.value})}
+                />
               </div>
             </div>
-          )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-password">New Password (optional)</Label>
+                <Input 
+                  id="edit-password" 
+                  type="password" 
+                  placeholder="Leave blank to keep current password"
+                  value={editUser.password || ''}
+                  onChange={(e) => setEditUser({...editUser, password: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-category">Category</Label>
+                <Select 
+                  value={editUser.category || 'undergraduate'} 
+                  onValueChange={(value) => setEditUser({...editUser, category: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high-school">High School</SelectItem>
+                    <SelectItem value="diploma">Diploma</SelectItem>
+                    <SelectItem value="undergraduate">Undergraduate</SelectItem>
+                    <SelectItem value="postgraduate">Postgraduate</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-institute">Institute</Label>
+                <Select 
+                  value={editUser.institute_id?.toString() || 'none'} 
+                  onValueChange={(value) => setEditUser({...editUser, institute_id: value === 'none' ? null : parseInt(value)})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Institute</SelectItem>
+                    {institutes.map((institute: any) => (
+                      <SelectItem key={institute.id} value={institute.id.toString()}>
+                        {institute.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-is_admin"
+                  checked={editUser.is_admin || false}
+                  onChange={(e) => setEditUser({...editUser, is_admin: e.target.checked})}
+                  className="rounded"
+                />
+                <Label htmlFor="edit-is_admin">Admin User</Label>
+              </div>
+            </div>
+          </div>
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               Cancel
             </Button>
-            <Button>Update User</Button>
+            <Button onClick={handleUpdateUser}>Update User</Button>
           </div>
         </DialogContent>
       </Dialog>

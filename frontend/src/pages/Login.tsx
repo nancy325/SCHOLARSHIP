@@ -76,7 +76,8 @@ const Login = () => {
         alert('Login successful! Welcome back!');
         
         // Redirect to appropriate dashboard
-        if (response.data.user.is_admin) {
+        const role = (response.data.user as any).role;
+        if (role === 'super_admin' || role === 'admin') {
           navigate('/admin-dashboard');
         } else {
           navigate('/student-dashboard');

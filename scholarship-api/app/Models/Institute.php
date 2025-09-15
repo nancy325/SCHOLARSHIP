@@ -11,6 +11,7 @@ class Institute extends Model
 
     protected $fillable = [
         'name',
+        'university_id',
         'type',
         'status',
         'email',
@@ -26,6 +27,11 @@ class Institute extends Model
         'contact_person',
         'contact_phone',
     ];
+
+    public function university()
+    {
+        return $this->belongsTo(University::class);
+    }
 
     protected $casts = [
         'rating' => 'decimal:1',

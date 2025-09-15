@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Institute;
 use App\Models\Scholarship;
 use App\Models\Application;
+use App\Models\University;
 use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
@@ -16,75 +17,196 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user if not exists
+        // Create super admin user if not exists
         $admin = User::firstOrCreate(
             ['email' => 'admin@scholarship.com'],
             [
                 'name' => 'Admin User',
                 'password' => Hash::make('password123'),
                 'category' => 'other',
+                'role' => 'super_admin',
                 'is_admin' => true,
             ]
         );
 
-        // Create sample institutes
+        // Create Indian universities
+        $universities = [
+            [
+                'name' => 'Indian Institute of Technology Bombay',
+                'status' => 'verified',
+                'email' => 'info@iitb.ac.in',
+                'phone' => '+91-22-25722545',
+                'website' => 'https://www.iitb.ac.in',
+                'address' => 'Powai, Mumbai 400076, Maharashtra',
+                'description' => 'IIT Bombay is one of India\'s premier institutions for engineering education and research.',
+                'established' => '1958',
+                'accreditation' => 'National',
+                'students' => 11000,
+                'rating' => 4.8,
+            ],
+            [
+                'name' => 'University of Delhi',
+                'status' => 'verified',
+                'email' => 'info@du.ac.in',
+                'phone' => '+91-11-27667853',
+                'website' => 'http://www.du.ac.in',
+                'address' => 'Benito Juarez Road, South Campus, New Delhi - 110021',
+                'description' => 'A premier university of the country with a venerable legacy and international acclaim.',
+                'established' => '1922',
+                'accreditation' => 'National',
+                'students' => 400000,
+                'rating' => 4.5,
+            ],
+            [
+                'name' => 'Gujarat Technological University (GTU)',
+                'status' => 'verified',
+                'email' => 'info@gtu.ac.in',
+                'phone' => '+91-79-23267500',
+                'website' => 'https://www.gtu.ac.in',
+                'address' => 'Nr. Vishwakarma Government Engineering College, Visat-Gandhinagar Highway, Chandkheda, Ahmedabad - 382424, Gujarat',
+                'description' => 'State university affiliating many engineering, pharmacy and management colleges across Gujarat.',
+                'established' => '2007',
+                'accreditation' => 'State',
+                'students' => 450000,
+                'rating' => 4.3,
+            ],
+            [
+                'name' => 'Gujarat University',
+                'status' => 'verified',
+                'email' => 'contact@gujaratuniversity.ac.in',
+                'phone' => '+91-79-26301341',
+                'website' => 'https://www.gujaratuniversity.ac.in',
+                'address' => 'Navrangpura, Ahmedabad - 380009, Gujarat',
+                'description' => 'One of the oldest universities in Gujarat with a large number of affiliated colleges.',
+                'established' => '1949',
+                'accreditation' => 'State',
+                'students' => 300000,
+                'rating' => 4.2,
+            ],
+            [
+                'name' => 'The Maharaja Sayajirao University of Baroda (MSU)',
+                'status' => 'verified',
+                'email' => 'info@msubaroda.ac.in',
+                'phone' => '+91-265-2795555',
+                'website' => 'https://msubaroda.ac.in',
+                'address' => 'Pratapgunj, Vadodara - 390002, Gujarat',
+                'description' => 'Renowned public university in Vadodara offering diverse programs.',
+                'established' => '1949',
+                'accreditation' => 'State',
+                'students' => 35000,
+                'rating' => 4.4,
+            ],
+        ];
+
+        $createdUniversities = [];
+        foreach ($universities as $u) {
+            $createdUniversities[] = University::firstOrCreate(
+                ['email' => $u['email']],
+                $u
+            );
+        }
+
+        // Create Indian institutes (colleges/centres) linked to above universities
         $institutes = [
             [
-                'name' => 'University of Technology',
-                'type' => 'university',
-                'status' => 'verified',
-                'email' => 'admin@utech.edu',
-                'phone' => '+1 (555) 123-4567',
-                'website' => 'https://utech.edu',
-                'address' => '123 University Ave, New York, NY 10001',
-                'description' => 'A leading technology university offering cutting-edge programs in engineering and computer science.',
-                'established' => '1985',
-                'accreditation' => 'Regional',
-                'students' => 15000,
-                'scholarships_count' => 0,
-                'rating' => 4.8,
-                'contact_person' => 'Dr. Sarah Johnson',
-                'contact_phone' => '+1 (555) 123-4568',
-            ],
-            [
-                'name' => 'State Community College',
-                'type' => 'community_college',
-                'status' => 'verified',
-                'email' => 'info@scc.edu',
-                'phone' => '+1 (555) 987-6543',
-                'website' => 'https://scc.edu',
-                'address' => '456 College Blvd, Los Angeles, CA 90210',
-                'description' => 'A community college providing affordable education and career training programs.',
-                'established' => '1970',
-                'accreditation' => 'Regional',
-                'students' => 8000,
-                'scholarships_count' => 0,
-                'rating' => 4.2,
-                'contact_person' => 'Mr. Robert Smith',
-                'contact_phone' => '+1 (555) 987-6544',
-            ],
-            [
-                'name' => 'Tech Institute of Innovation',
+                'name' => 'IIT Bombay - Computer Science & Engineering',
                 'type' => 'technical_institute',
                 'status' => 'verified',
-                'email' => 'contact@tii.edu',
-                'phone' => '+1 (555) 456-7890',
-                'website' => 'https://tii.edu',
-                'address' => '789 Innovation Dr, Austin, TX 73301',
-                'description' => 'A specialized technical institute focusing on innovation and entrepreneurship.',
-                'established' => '2000',
+                'email' => 'cse@iitb.ac.in',
+                'phone' => '+91-22-2576-7901',
+                'website' => 'https://www.cse.iitb.ac.in',
+                'address' => 'IIT Bombay, Powai, Mumbai 400076, Maharashtra',
+                'description' => 'Department of Computer Science and Engineering at IIT Bombay.',
+                'established' => '1982',
                 'accreditation' => 'National',
-                'students' => 5000,
+                'students' => 1200,
+                'scholarships_count' => 0,
+                'rating' => 4.9,
+                'contact_person' => 'Head of Department',
+                'contact_phone' => '+91-22-2576-7901',
+                'university_id' => $createdUniversities[0]->id,
+            ],
+            [
+                'name' => 'St. Stephen\'s College, University of Delhi',
+                'type' => 'college',
+                'status' => 'verified',
+                'email' => 'principal@ststephens.edu',
+                'phone' => '+91-11-27667271',
+                'website' => 'https://www.ststephens.edu',
+                'address' => 'University Enclave, North Campus, Delhi 110007',
+                'description' => 'One of India\'s most prestigious colleges, affiliated to the University of Delhi.',
+                'established' => '1881',
+                'accreditation' => 'National',
+                'students' => 2000,
+                'scholarships_count' => 0,
+                'rating' => 4.7,
+                'contact_person' => 'Principal',
+                'contact_phone' => '+91-11-27667271',
+                'university_id' => $createdUniversities[1]->id,
+            ],
+            // Gujarat institutes
+            [
+                'name' => 'L. D. College of Engineering (LDCE)',
+                'type' => 'engineering_college',
+                'status' => 'verified',
+                'email' => 'contact@ldce.ac.in',
+                'phone' => '+91-79-26302887',
+                'website' => 'https://ldce.ac.in',
+                'address' => 'Opp. Gujarat University, Navrangpura, Ahmedabad - 380015',
+                'description' => 'Premier government engineering college in Gujarat affiliated to GTU.',
+                'established' => '1948',
+                'accreditation' => 'State',
+                'students' => 7000,
                 'scholarships_count' => 0,
                 'rating' => 4.6,
-                'contact_person' => 'Prof. Michael Chen',
-                'contact_phone' => '+1 (555) 456-7891',
+                'contact_person' => 'Principal',
+                'contact_phone' => '+91-79-26302887',
+                'university_id' => $createdUniversities[2]->id, // GTU
+            ],
+            [
+                'name' => 'DA-IICT, Gandhinagar',
+                'type' => 'technical_institute',
+                'status' => 'verified',
+                'email' => 'info@daiict.ac.in',
+                'phone' => '+91-79-68261500',
+                'website' => 'https://www.daiict.ac.in',
+                'address' => 'Near Reliance Chowkdi, Gandhinagar - 382007',
+                'description' => 'Dhirubhai Ambani Institute of Information and Communication Technology.',
+                'established' => '2001',
+                'accreditation' => 'Deemed',
+                'students' => 2000,
+                'scholarships_count' => 0,
+                'rating' => 4.7,
+                'contact_person' => 'Registrar',
+                'contact_phone' => '+91-79-68261500',
+                'university_id' => $createdUniversities[2]->id, // linked under GTU for listing
+            ],
+            [
+                'name' => 'Faculty of Technology & Engineering, MSU Baroda',
+                'type' => 'engineering_college',
+                'status' => 'verified',
+                'email' => 'fte@msubaroda.ac.in',
+                'phone' => '+91-265-2795555',
+                'website' => 'https://msubaroda.ac.in/Academics/Technology',
+                'address' => 'MSU Campus, Vadodara - 390001',
+                'description' => 'Constituent engineering faculty of MSU Baroda.',
+                'established' => '1890',
+                'accreditation' => 'State',
+                'students' => 5000,
+                'scholarships_count' => 0,
+                'rating' => 4.5,
+                'contact_person' => 'Dean',
+                'contact_phone' => '+91-265-2795555',
+                'university_id' => $createdUniversities[4 - 1]->id, // MSU index 3
             ],
         ];
 
         $createdInstitutes = [];
         foreach ($institutes as $instituteData) {
-            $createdInstitutes[] = Institute::create($instituteData);
+            $createdInstitutes[] = Institute::firstOrCreate(
+                ['email' => $instituteData['email']],
+                $instituteData
+            );
         }
 
         // Create sample users
@@ -94,6 +216,7 @@ class AdminSeeder extends Seeder
                 'email' => 'john.doe@example.com',
                 'password' => Hash::make('password123'),
                 'category' => 'undergraduate',
+                'role' => 'student',
                 'is_admin' => false,
                 'institute_id' => $createdInstitutes[0]->id,
             ],
@@ -102,6 +225,7 @@ class AdminSeeder extends Seeder
                 'email' => 'jane.smith@example.com',
                 'password' => Hash::make('password123'),
                 'category' => 'graduate',
+                'role' => 'student',
                 'is_admin' => false,
                 'institute_id' => $createdInstitutes[1]->id,
             ],
@@ -110,76 +234,129 @@ class AdminSeeder extends Seeder
                 'email' => 'mike.johnson@example.com',
                 'password' => Hash::make('password123'),
                 'category' => 'undergraduate',
+                'role' => 'student',
                 'is_admin' => false,
-                'institute_id' => $createdInstitutes[2]->id,
+                'institute_id' => $createdInstitutes[0]->id,
             ],
         ];
 
         $createdUsers = [];
         foreach ($users as $userData) {
-            $createdUsers[] = User::create($userData);
+            $createdUsers[] = User::firstOrCreate(
+                ['email' => $userData['email']],
+                $userData
+            );
         }
 
-        // Create sample scholarships
+        // Create India-focused scholarships aligned to spec
         $scholarships = [
             [
-                'title' => 'Merit-Based Engineering Scholarship',
+                'title' => 'National Means-cum-Merit Scholarship (NMMSS)',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Central Sector scheme to award scholarships to meritorious students of economically weaker sections.',
+                'eligibility' => 'Students of Class IX-XII with parental income below threshold and minimum marks criteria.',
+                'start_date' => now()->subMonths(1)->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://scholarships.gov.in/',
+            ],
+            [
+                'title' => 'Prime Minister\'s Research Fellowship (PMRF)',
+                'type' => 'government',
+                'university_id' => $createdUniversities[0]->id,
+                'institute_id' => null,
+                'description' => 'Fellowship to attract the best talent into research at leading institutions like IITs and IISc.',
+                'eligibility' => 'B.Tech/Integrated M.Tech/MS from IIs/IITs/IISc with high CGPA or GATE score.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(3)->toDateString(),
+                'apply_link' => 'https://pmrf.in/',
+            ],
+            [
+                'title' => 'IIT Bombay Institute Scholarship',
+                'type' => 'institute',
+                'university_id' => $createdUniversities[0]->id,
                 'institute_id' => $createdInstitutes[0]->id,
-                'type' => 'merit_based',
-                'status' => 'active',
-                'amount' => 25000.00,
-                'currency' => 'USD',
-                'deadline' => now()->addMonths(3),
-                'max_applications' => 100,
-                'field' => 'Engineering',
-                'level' => 'undergraduate',
-                'description' => 'A prestigious scholarship for outstanding engineering students demonstrating academic excellence and leadership potential.',
-                'requirements' => 'Minimum 3.8 GPA, Engineering major, Leadership experience',
-                'eligibility' => 'US citizens, Full-time students, Engineering majors',
-                'documents' => 'Transcript, Resume, Letters of recommendation, Personal statement',
+                'description' => 'Financial assistance for deserving UG students of IIT Bombay CSE.',
+                'eligibility' => 'Merit-cum-means as per IIT Bombay norms.',
+                'start_date' => now()->subWeeks(2)->toDateString(),
+                'deadline' => now()->addMonths(1)->toDateString(),
+                'apply_link' => 'https://www.iitb.ac.in/en/education/scholarships',
             ],
             [
-                'title' => 'Community Service Leadership Award',
+                'title' => 'St. Stephen\'s College Merit Scholarship',
+                'type' => 'institute',
+                'university_id' => $createdUniversities[1]->id,
                 'institute_id' => $createdInstitutes[1]->id,
-                'type' => 'need_based',
-                'status' => 'active',
-                'amount' => 10000.00,
-                'currency' => 'USD',
-                'deadline' => now()->addMonths(2),
-                'max_applications' => 50,
-                'field' => 'Any',
-                'level' => 'undergraduate',
-                'description' => 'Recognition for students who have demonstrated exceptional community service and leadership.',
-                'requirements' => 'Minimum 3.0 GPA, 100+ community service hours, Leadership role',
-                'eligibility' => 'All students, Community service experience required',
-                'documents' => 'Service log, Letters of recommendation, Personal statement',
+                'description' => 'Merit-based support for outstanding undergraduate students.',
+                'eligibility' => 'High academic standing as per college criteria.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://www.ststephens.edu/scholarships/',
             ],
             [
-                'title' => 'Innovation in Technology Grant',
-                'institute_id' => $createdInstitutes[2]->id,
-                'type' => 'project_based',
-                'status' => 'active',
-                'amount' => 15000.00,
-                'currency' => 'USD',
-                'deadline' => now()->addMonths(4),
-                'max_applications' => 25,
-                'field' => 'Technology',
-                'level' => 'graduate',
-                'description' => 'Funding for innovative technology projects that demonstrate creativity and potential impact.',
-                'requirements' => 'Project proposal, Technology background, Innovation focus',
-                'eligibility' => 'Graduate students, Technology/CS majors',
-                'documents' => 'Project proposal, Portfolio, Academic references',
+                'title' => 'Tata Scholarship (Private)',
+                'type' => 'private',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Private sector support for Indian students pursuing higher education.',
+                'eligibility' => 'Indian citizens with strong academics and means criteria.',
+                'start_date' => now()->subMonth()->toDateString(),
+                'deadline' => now()->addMonths(4)->toDateString(),
+                'apply_link' => 'https://www.tatatrusts.org/our-work/individual-grants-programme/education-grants',
+            ],
+            // Gujarat specific
+            [
+                'title' => 'Mukhyamantri Yuva Swavalamban Yojana (MYSY) - Gujarat',
+                'type' => 'government',
+                'university_id' => $createdUniversities[2]->id, // GTU
+                'institute_id' => null,
+                'description' => 'Government of Gujarat scholarship for bright and needy students in higher education.',
+                'eligibility' => 'Resident of Gujarat, academic merit and income criteria as per scheme.',
+                'start_date' => now()->subWeeks(3)->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'apply_link' => 'https://mysy.guj.nic.in',
+            ],
+            [
+                'title' => 'GTU Merit Scholarship for Engineering Undergraduates',
+                'type' => 'university',
+                'university_id' => $createdUniversities[2]->id, // GTU
+                'institute_id' => null,
+                'description' => 'Merit scholarship by Gujarat Technological University for top-ranking UG students.',
+                'eligibility' => 'Top 5% students in semester results; GTU affiliated colleges.',
+                'start_date' => now()->toDateString(),
+                'deadline' => now()->addMonths(1)->toDateString(),
+                'apply_link' => 'https://www.gtu.ac.in',
+            ],
+            [
+                'title' => 'LDCE Alumni Association Scholarship',
+                'type' => 'institute',
+                'university_id' => $createdUniversities[2]->id, // GTU
+                'institute_id' => collect($createdInstitutes)->firstWhere('email', 'contact@ldce.ac.in')->id ?? null,
+                'description' => 'Support from LDCE Alumni Association to deserving students.',
+                'eligibility' => 'LDCE students meeting merit-cum-means criteria.',
+                'start_date' => now()->subDays(10)->toDateString(),
+                'deadline' => now()->addMonths(1)->toDateString(),
+                'apply_link' => 'https://ldce.ac.in/alumni',
             ],
         ];
 
         $createdScholarships = [];
         foreach ($scholarships as $scholarshipData) {
-            $scholarship = Scholarship::create($scholarshipData);
+            $scholarship = Scholarship::firstOrCreate(
+                [
+                    'title' => $scholarshipData['title'],
+                ],
+                $scholarshipData + ['created_by' => $admin->id]
+            );
             $createdScholarships[] = $scholarship;
             
-            // Update institute scholarships count
+            if ($scholarship->wasRecentlyCreated && $scholarship->institute_id) {
             $institute = Institute::find($scholarship->institute_id);
+                if ($institute) {
             $institute->increment('scholarships_count');
+                }
+            }
         }
 
         // Create sample applications
@@ -212,7 +389,13 @@ class AdminSeeder extends Seeder
         ];
 
         foreach ($applications as $applicationData) {
-            Application::create($applicationData);
+            Application::firstOrCreate(
+                [
+                    'user_id' => $applicationData['user_id'],
+                    'scholarship_id' => $applicationData['scholarship_id'],
+                ],
+                $applicationData
+            );
         }
 
         $this->command->info('Sample data created successfully!');

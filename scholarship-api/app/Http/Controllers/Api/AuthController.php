@@ -50,6 +50,8 @@ class AuthController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'category' => $user->category,
+                        'role' => $user->role ?? null,
+                        'is_admin' => $user->is_admin ?? false,
                     ],
                     'token' => $token,
                 ]
@@ -103,6 +105,7 @@ class AuthController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'category' => $user->category,
+                        'role' => $user->role ?? null,
                         'is_admin' => $user->is_admin ?? false,
                     ],
                     'token' => $token,

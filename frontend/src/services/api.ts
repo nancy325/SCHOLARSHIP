@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -234,50 +234,49 @@ class ApiService {
     return this.request('/admin/institutes/stats');
   }
 
-  // Scholarship Management
-  async getScholarships(params?: { search?: string; status?: string; type?: string; level?: string; institute_id?: number; page?: number }): Promise<ApiResponse> {
+  // Scholarship Management (spec-aligned)
+  async getScholarships(params?: { search?: string; type?: string; university_id?: number; institute_id?: number; page?: number }): Promise<ApiResponse> {
     const queryParams = new URLSearchParams();
     if (params?.search) queryParams.append('search', params.search);
-    if (params?.status) queryParams.append('status', params.status);
     if (params?.type) queryParams.append('type', params.type);
-    if (params?.level) queryParams.append('level', params.level);
+    if (params?.university_id) queryParams.append('university_id', params.university_id.toString());
     if (params?.institute_id) queryParams.append('institute_id', params.institute_id.toString());
     if (params?.page) queryParams.append('page', params.page.toString());
     
     const query = queryParams.toString();
-    return this.request(`/admin/scholarships${query ? `?${query}` : ''}`);
+    return this.request(`/scholarships${query ? `?${query}` : ''}`);
   }
 
   async getScholarship(id: number): Promise<ApiResponse> {
-    return this.request(`/admin/scholarships/${id}`);
+    return this.request(`/scholarships/${id}`);
   }
 
   async createScholarship(scholarshipData: any): Promise<ApiResponse> {
-    return this.request('/admin/scholarships', {
+    return this.request('/scholarships', {
       method: 'POST',
       body: JSON.stringify(scholarshipData),
     });
   }
 
   async updateScholarship(id: number, scholarshipData: any): Promise<ApiResponse> {
-    return this.request(`/admin/scholarships/${id}`, {
+    return this.request(`/scholarships/${id}`, {
       method: 'PUT',
       body: JSON.stringify(scholarshipData),
     });
   }
 
   async deleteScholarship(id: number): Promise<ApiResponse> {
-    return this.request(`/admin/scholarships/${id}`, {
+    return this.request(`/scholarships/${id}`, {
       method: 'DELETE',
     });
   }
 
-  async getScholarshipStats(): Promise<ApiResponse> {
-    return this.request('/admin/scholarships/stats');
+  async getScholarshipInstitutes(): Promise<ApiResponse> {
+    return this.request('/institutes/options');
   }
 
-  async getScholarshipInstitutes(): Promise<ApiResponse> {
-    return this.request('/admin/scholarships/institutes');
+  async getUniversities(): Promise<ApiResponse> {
+    return this.request('/universities/options');
   }
 }
 

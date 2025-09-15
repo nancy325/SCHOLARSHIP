@@ -44,37 +44,34 @@ import { apiService } from '@/services/api';
 
 const ScholarshipManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [isAddScholarshipOpen, setIsAddScholarshipOpen] = useState(false);
   const [isEditScholarshipOpen, setIsEditScholarshipOpen] = useState(false);
   const [isViewScholarshipOpen, setIsViewScholarshipOpen] = useState(false);
   const [selectedScholarship, setSelectedScholarship] = useState(null);
   const [scholarships, setScholarships] = useState([]);
   const [institutes, setInstitutes] = useState([]);
+  const [universities, setUniversities] = useState([]);
+  const institutesOnly = institutes;
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
-    institute_id: '',
-    type: '',
-    amount: '',
-    currency: 'USD',
-    deadline: '',
-    max_applications: '',
-    field: '',
-    level: '',
     description: '',
-    requirements: '',
+    type: '',
+    university_id: '',
+    institute_id: '',
     eligibility: '',
-    documents: '',
-    status: 'active'
+    deadline: '',
+    apply_link: ''
   });
   const { toast } = useToast();
 
-  // Load scholarships and institutes on component mount
+  // Load scholarships and options on component mount
   useEffect(() => {
     fetchScholarships();
     fetchInstitutes();
+    fetchUniversities();
   }, []);
 
   // Fetch scholarships from API
@@ -83,7 +80,7 @@ const ScholarshipManagement = () => {
     try {
       const response = await apiService.getScholarships({
         search: searchTerm,
-        status: statusFilter !== 'all' ? statusFilter : undefined
+        type: typeFilter !== 'all' ? typeFilter : undefined
       });
       if (response.success) {
         setScholarships(response.data.data || []);
@@ -118,13 +115,24 @@ const ScholarshipManagement = () => {
     }
   };
 
+  const fetchUniversities = async () => {
+    try {
+      const response = await apiService.getUniversities();
+      if (response.success) {
+        setUniversities(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching universities:', error);
+    }
+  };
+
   // Refetch scholarships when search or filter changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchScholarships();
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, typeFilter]);
 
   // Form handling functions
   const handleInputChange = (field: string, value: string) => {
@@ -137,19 +145,13 @@ const ScholarshipManagement = () => {
   const resetForm = () => {
     setFormData({
       title: '',
-      institute_id: '',
-      type: '',
-      amount: '',
-      currency: 'USD',
-      deadline: '',
-      max_applications: '',
-      field: '',
-      level: '',
       description: '',
-      requirements: '',
+      type: '',
+      university_id: '',
+      institute_id: '',
       eligibility: '',
-      documents: '',
-      status: 'active'
+      deadline: '',
+      apply_link: ''
     });
   };
 
@@ -157,7 +159,11 @@ const ScholarshipManagement = () => {
   const handleCreateScholarship = async () => {
     setSubmitting(true);
     try {
-      const response = await apiService.createScholarship(formData);
+      const response = await apiService.createScholarship({
+        ...formData,
+        university_id: formData.university_id ? Number(formData.university_id) : null,
+        institute_id: formData.institute_id ? Number(formData.institute_id) : null,
+      });
       if (response.success) {
         toast({
           title: "Success",
@@ -191,7 +197,11 @@ const ScholarshipManagement = () => {
     
     setSubmitting(true);
     try {
-      const response = await apiService.updateScholarship(selectedScholarship.id, formData);
+      const response = await apiService.updateScholarship(selectedScholarship.id, {
+        ...formData,
+        university_id: formData.university_id ? Number(formData.university_id) : null,
+        institute_id: formData.institute_id ? Number(formData.institute_id) : null,
+      });
       if (response.success) {
         toast({
           title: "Success",
@@ -251,55 +261,27 @@ const ScholarshipManagement = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case 'expired':
-        return <Badge variant="secondary">Expired</Badge>;
-      case 'suspended':
-        return <Badge variant="destructive">Suspended</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  // No status in spec; keep placeholder if needed later
+  const getStatusBadge = (_status: string) => null;
 
   const getTypeBadge = (type: string) => {
     switch (type) {
-      case 'merit_based':
-        return <Badge className="bg-blue-100 text-blue-800">Merit-Based</Badge>;
-      case 'need_based':
-        return <Badge className="bg-green-100 text-green-800">Need-Based</Badge>;
-      case 'project_based':
-        return <Badge className="bg-purple-100 text-purple-800">Project-Based</Badge>;
-      case 'athletic':
-        return <Badge className="bg-orange-100 text-orange-800">Athletic</Badge>;
+      case 'government':
+        return <Badge className="bg-blue-100 text-blue-800">Government</Badge>;
+      case 'private':
+        return <Badge className="bg-green-100 text-green-800">Private</Badge>;
+      case 'university':
+        return <Badge className="bg-purple-100 text-purple-800">University</Badge>;
+      case 'institute':
+        return <Badge className="bg-orange-100 text-orange-800">Institute</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
   };
 
-  const getLevelBadge = (level: string) => {
-    switch (level) {
-      case 'undergraduate':
-        return <Badge variant="outline">Undergraduate</Badge>;
-      case 'graduate':
-        return <Badge className="bg-indigo-100 text-indigo-800">Graduate</Badge>;
-      case 'phd':
-        return <Badge className="bg-purple-100 text-purple-800">PhD</Badge>;
-      default:
-        return <Badge variant="outline">{level}</Badge>;
-    }
-  };
+  const getLevelBadge = (_: string) => null;
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  };
+  const formatCurrency = (_amount: number, _currency: string) => '';
 
   const isDeadlineNear = (deadline: string) => {
     const deadlineDate = new Date(deadline);
@@ -319,19 +301,13 @@ const ScholarshipManagement = () => {
     setSelectedScholarship(scholarship);
     setFormData({
       title: scholarship.title || '',
-      institute_id: scholarship.institute_id || '',
-      type: scholarship.type || '',
-      amount: scholarship.amount || '',
-      currency: scholarship.currency || 'USD',
-      deadline: scholarship.deadline || '',
-      max_applications: scholarship.max_applications || '',
-      field: scholarship.field || '',
-      level: scholarship.level || '',
       description: scholarship.description || '',
-      requirements: scholarship.requirements || '',
+      type: scholarship.type || '',
+      university_id: scholarship.university_id?.toString() || '',
+      institute_id: scholarship.institute_id?.toString() || '',
       eligibility: scholarship.eligibility || '',
-      documents: scholarship.documents || '',
-      status: scholarship.status || 'active'
+      deadline: scholarship.deadline || '',
+      apply_link: scholarship.apply_link || ''
     });
     setIsEditScholarshipOpen(true);
   };
@@ -372,21 +348,7 @@ const ScholarshipManagement = () => {
                     onChange={(e) => handleInputChange('title', e.target.value)}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="institute">Institute</Label>
-                  <Select value={formData.institute_id} onValueChange={(value) => handleInputChange('institute_id', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select institute" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {institutes.map((institute) => (
-                        <SelectItem key={institute.id} value={institute.id.toString()}>
-                          {institute.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -396,45 +358,71 @@ const ScholarshipManagement = () => {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="merit_based">Merit-Based</SelectItem>
-                      <SelectItem value="need_based">Need-Based</SelectItem>
-                      <SelectItem value="project_based">Project-Based</SelectItem>
-                      <SelectItem value="athletic">Athletic</SelectItem>
+                      <SelectItem value="government">Government</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="university">University</SelectItem>
+                      <SelectItem value="institute">Institute</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                {formData.type === 'university' && (
                 <div>
-                  <Label htmlFor="level">Level</Label>
-                  <Select value={formData.level} onValueChange={(value) => handleInputChange('level', value)}>
+                    <Label htmlFor="university">University</Label>
+                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
+                        <SelectValue placeholder="Select university" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="undergraduate">Undergraduate</SelectItem>
-                      <SelectItem value="graduate">Graduate</SelectItem>
-                      <SelectItem value="phd">PhD</SelectItem>
+                        {universities.map((inst: any) => (
+                          <SelectItem key={inst.id} value={inst.id.toString()}>
+                            {inst.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
+                )}
+                {formData.type === 'institute' && (
                 <div>
-                  <Label htmlFor="field">Field of Study</Label>
-                  <Input 
-                    id="field" 
-                    placeholder="e.g., Engineering" 
-                    value={formData.field}
-                    onChange={(e) => handleInputChange('field', e.target.value)}
-                  />
+                    <Label htmlFor="university">University</Label>
+                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select university" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {universities.map((inst: any) => (
+                          <SelectItem key={inst.id} value={inst.id.toString()}>
+                            {inst.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="mt-4">
+                      <Label htmlFor="institute">Institute</Label>
+                      <Select value={formData.institute_id} onValueChange={(value) => handleInputChange('institute_id', value)} disabled={!formData.university_id}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={!formData.university_id ? 'Select university first' : 'Select institute'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {institutesOnly.filter((inst: any) => inst.university_id === Number(formData.university_id)).map((inst: any) => (
+                            <SelectItem key={inst.id} value={inst.id.toString()}>
+                              {inst.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                  </Select>
                 </div>
+                </div>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="amount">Amount</Label>
+                  <Label htmlFor="start-date">Start Date</Label>
                   <Input 
-                    id="amount" 
-                    type="number" 
-                    placeholder="Enter amount" 
-                    value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                    id="start-date" 
+                    type="date" 
+                    value={(formData as any).start_date || ''}
+                    onChange={(e) => handleInputChange('start_date' as any, e.target.value)}
                   />
                 </div>
                 <div>
@@ -446,33 +434,18 @@ const ScholarshipManagement = () => {
                     onChange={(e) => handleInputChange('deadline', e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="max-applications">Max Applications</Label>
+                  <Label htmlFor="apply-link">Apply Link</Label>
                   <Input 
-                    id="max-applications" 
-                    type="number" 
-                    placeholder="Enter max applications" 
-                    value={formData.max_applications}
-                    onChange={(e) => handleInputChange('max_applications', e.target.value)}
+                    id="apply-link" 
+                    placeholder="https://..." 
+                    value={formData.apply_link}
+                    onChange={(e) => handleInputChange('apply_link', e.target.value)}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
-              </div>
+              
+              
               <div>
                 <Label htmlFor="description">Description</Label>
                 <Textarea 
@@ -484,16 +457,6 @@ const ScholarshipManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="requirements">Requirements</Label>
-                <Textarea 
-                  id="requirements" 
-                  placeholder="Enter eligibility requirements" 
-                  rows={2}
-                  value={formData.requirements}
-                  onChange={(e) => handleInputChange('requirements', e.target.value)}
-                />
-              </div>
-              <div>
                 <Label htmlFor="eligibility">Eligibility Criteria</Label>
                 <Textarea 
                   id="eligibility" 
@@ -501,16 +464,6 @@ const ScholarshipManagement = () => {
                   rows={2}
                   value={formData.eligibility}
                   onChange={(e) => handleInputChange('eligibility', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="documents">Required Documents</Label>
-                <Textarea 
-                  id="documents" 
-                  placeholder="Enter required documents" 
-                  rows={2}
-                  value={formData.documents}
-                  onChange={(e) => handleInputChange('documents', e.target.value)}
                 />
               </div>
             </div>
@@ -549,16 +502,16 @@ const ScholarshipManagement = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="government">Government</SelectItem>
+                <SelectItem value="private">Private</SelectItem>
+                <SelectItem value="university">University</SelectItem>
+                <SelectItem value="institute">Institute</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -623,22 +576,18 @@ const ScholarshipManagement = () => {
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <BookOpen className="h-4 w-4" />
-                  <span>{scholarship.field}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Target className="h-4 w-4" />
-                  <span>{getLevelBadge(scholarship.level)}</span>
+                  <span className="truncate">{scholarship.description?.slice(0, 80) || 'No description'}</span>
                 </div>
                 
                 <div className="pt-2 border-t">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <span className="font-medium">{formatCurrency(scholarship.amount, scholarship.currency)}</span>
+                      <Target className="h-4 w-4 text-gray-600" />
+                      <a className="text-blue-600 hover:underline" href={scholarship.apply_link} target="_blank" rel="noreferrer">Apply</a>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Users className="h-4 w-4 text-blue-600" />
-                      <span>{scholarship.applications_count || 0}/{scholarship.max_applications}</span>
+                      <span>Public link</span>
                     </div>
                   </div>
                   
@@ -817,44 +766,10 @@ const ScholarshipManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="edit-level">Level</Label>
-                  <Select value={formData.level} onValueChange={(value) => handleInputChange('level', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="undergraduate">Undergraduate</SelectItem>
-                      <SelectItem value="graduate">Graduate</SelectItem>
-                      <SelectItem value="phd">PhD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                
+                
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-amount">Amount</Label>
-                  <Input 
-                    id="edit-amount" 
-                    type="number" 
-                    value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', e.target.value)}
-                  />
-                </div>
                 <div>
                   <Label htmlFor="edit-deadline">Application Deadline</Label>
                   <Input 
@@ -862,6 +777,14 @@ const ScholarshipManagement = () => {
                     type="date" 
                     value={formData.deadline}
                     onChange={(e) => handleInputChange('deadline', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-apply-link">Apply Link</Label>
+                  <Input 
+                    id="edit-apply-link" 
+                    value={formData.apply_link}
+                    onChange={(e) => handleInputChange('apply_link', e.target.value)}
                   />
                 </div>
               </div>
@@ -902,3 +825,5 @@ const ScholarshipManagement = () => {
 };
 
 export default ScholarshipManagement;
+
+

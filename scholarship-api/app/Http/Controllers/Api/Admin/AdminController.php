@@ -23,7 +23,8 @@ class AdminController extends Controller
                 'total_institutes' => Institute::count(),
                 'total_scholarships' => Scholarship::count(),
                 'total_applications' => Application::count(),
-                'active_scholarships' => Scholarship::where('status', 'active')->count(),
+                // Spec-aligned schema has no status; treat all as active for now
+                'active_scholarships' => Scholarship::count(),
                 'pending_applications' => Application::where('status', 'pending')->count(),
                 'verified_institutes' => Institute::where('status', 'verified')->count(),
                 'recent_users' => User::where('created_at', '>=', now()->subDays(30))->count(),

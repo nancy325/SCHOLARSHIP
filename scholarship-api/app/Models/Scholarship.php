@@ -11,24 +11,20 @@ class Scholarship extends Model
 
     protected $fillable = [
         'title',
-        'institute_id',
         'type',
-        'status',
-        'amount',
-        'currency',
+        'university_id',
+        'institute_id',
         'deadline',
-        'max_applications',
-        'field',
-        'level',
         'description',
-        'requirements',
         'eligibility',
-        'documents',
+        'start_date',
+        'apply_link',
+        'created_by',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
         'deadline' => 'date',
+        'start_date' => 'date',
     ];
 
     // Relationships
@@ -37,14 +33,15 @@ class Scholarship extends Model
         return $this->belongsTo(Institute::class);
     }
 
-    public function applications()
+    public function university()
     {
-        return $this->hasMany(Application::class);
+        return $this->belongsTo(Institute::class, 'university_id');
     }
 
-    // Accessor for applications count
-    public function getApplicationsCountAttribute()
+    public function creator()
     {
-        return $this->applications()->count();
+        return $this->belongsTo(User::class, 'created_by');
     }
+
+    // Applications table not used in spec
 }

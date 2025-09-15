@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Models\Institute;
+use App\Models\University;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,8 +33,8 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// Admin routes
-Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+// Admin routes (all admin roles)
+Route::prefix('admin')->middleware(['auth:sanctum', 'role:super_admin,admin,university_admin,institute_admin'])->group(function () {
     // Dashboard
     Route::get('/dashboard/stats', [\App\Http\Controllers\Api\Admin\AdminController::class, 'getDashboardStats']);
     Route::get('/dashboard/activity', [\App\Http\Controllers\Api\Admin\AdminController::class, 'getRecentActivity']);
@@ -50,4 +52,30 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::apiResource('scholarships', \App\Http\Controllers\Api\Admin\ScholarshipController::class);
     Route::get('/scholarships/stats', [\App\Http\Controllers\Api\Admin\ScholarshipController::class, 'getStats']);
     Route::get('/scholarships/institutes', [\App\Http\Controllers\Api\Admin\ScholarshipController::class, 'getInstitutes']);
+});
+
+// Public/Protected Scholarship routes per spec
+Route::prefix('scholarships')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\ScholarshipController::class, 'index']);
+    Route::get('/{id}', [\App\Http\Controllers\Api\ScholarshipController::class, 'show']);
+    Route::middleware(['auth:sanctum', 'role:super_admin,admin,university_admin,institute_admin'])->group(function () {
+        Route::post('/', [\App\Http\Controllers\Api\ScholarshipController::class, 'store']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\ScholarshipController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\ScholarshipController::class, 'destroy']);
+    });
+});
+
+// Public institutes options for select inputs
+Route::get('/institutes/options', function () {
+    return response()->json([
+        'success' => true,
+        'data' => Institute::select('id', 'name', 'university_id')->orderBy('name')->get(),
+    ]);
+});
+
+Route::get('/universities/options', function () {
+    return response()->json([
+        'success' => true,
+        'data' => University::select('id', 'name')->orderBy('name')->get(),
+    ]);
 });

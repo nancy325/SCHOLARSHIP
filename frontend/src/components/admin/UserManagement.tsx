@@ -54,7 +54,7 @@ const UserManagement = () => {
     email: '',
     password: '',
     category: 'undergraduate',
-    is_admin: false,
+    role: 'student',
     institute_id: null
   });
   const [editUser, setEditUser] = useState({
@@ -62,7 +62,7 @@ const UserManagement = () => {
     email: '',
     password: '',
     category: 'undergraduate',
-    is_admin: false,
+    role: 'student',
     institute_id: null
   });
 
@@ -117,7 +117,7 @@ const UserManagement = () => {
           email: '',
           password: '',
           category: 'undergraduate',
-          is_admin: false,
+          role: 'student',
           institute_id: null
         });
         fetchUsers(); // Refresh the list
@@ -147,11 +147,15 @@ const UserManagement = () => {
     }
   };
 
-  const getRoleBadge = (isAdmin: boolean) => {
-    if (isAdmin) {
-      return <Badge className="bg-purple-100 text-purple-800">Admin</Badge>;
-    }
-    return <Badge variant="outline">Student</Badge>;
+  const getRoleBadge = (role: string) => {
+    const map: any = {
+      super_admin: <Badge className="bg-purple-100 text-purple-800">Super Admin</Badge>,
+      admin: <Badge className="bg-indigo-100 text-indigo-800">Admin</Badge>,
+      university_admin: <Badge className="bg-blue-100 text-blue-800">University Admin</Badge>,
+      institute_admin: <Badge className="bg-green-100 text-green-800">Institute Admin</Badge>,
+      student: <Badge variant="outline">Student</Badge>,
+    };
+    return map[role] ?? <Badge variant="outline">{role || 'Student'}</Badge>;
   };
 
   const handleEditUser = (user: any) => {
@@ -161,7 +165,7 @@ const UserManagement = () => {
       email: user.email,
       password: '',
       category: user.category,
-      is_admin: user.is_admin,
+      role: user.role || 'student',
       institute_id: user.institute_id
     });
     setIsEditUserOpen(true);
@@ -316,16 +320,23 @@ const UserManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="is_admin"
-                    checked={newUser.is_admin}
-                    onChange={(e) => setNewUser({...newUser, is_admin: e.target.checked})}
-                    className="rounded"
-                  />
-                  <Label htmlFor="is_admin">Admin User</Label>
-              </div>
+                <div>
+                  <Label htmlFor="role">Role</Label>
+                  <Select 
+                    value={newUser.role}
+                    onValueChange={(value) => setNewUser({...newUser, role: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="institute_admin">Institute Admin</SelectItem>
+                      <SelectItem value="university_admin">University Admin</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <div className="flex justify-end space-x-2">
@@ -435,7 +446,7 @@ const UserManagement = () => {
                       {getStatusBadge(user.category)}
                     </td>
                     <td className="py-3 px-4">
-                      {getRoleBadge(user.is_admin)}
+                      {getRoleBadge(user.role || (user.is_admin ? 'admin' : 'student'))}
                     </td>
                     {/* <td className="py-3 px-4">
                       <div className="text-center">
@@ -517,7 +528,7 @@ const UserManagement = () => {
                 </div>
                 <div>
                   <Label>Role</Label>
-                  <div>{getRoleBadge(selectedUser.is_admin)}</div>
+                  <div>{getRoleBadge(selectedUser.role || (selectedUser.is_admin ? 'admin' : 'student'))}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -651,15 +662,22 @@ const UserManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-is_admin"
-                  checked={editUser.is_admin || false}
-                  onChange={(e) => setEditUser({...editUser, is_admin: e.target.checked})}
-                  className="rounded"
-                />
-                <Label htmlFor="edit-is_admin">Admin User</Label>
+              <div>
+                <Label htmlFor="edit-role">Role</Label>
+                <Select 
+                  value={editUser.role || 'student'}
+                  onValueChange={(value) => setEditUser({...editUser, role: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="institute_admin">Institute Admin</SelectItem>
+                    <SelectItem value="university_admin">University Admin</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

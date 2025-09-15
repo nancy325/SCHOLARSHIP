@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -31,13 +32,25 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts';
+import { apiService } from '@/services/api';
 
 const Analytics = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const [showData, setShowData] = useState(true);
 
+  // Fetch analytics and recent activity from API
+  const { data: analyticsResponse } = useQuery({
+    queryKey: ['admin-analytics'],
+    queryFn: () => apiService.getAnalytics(),
+  });
+
+  const { data: activityResponse } = useQuery({
+    queryKey: ['admin-recent-activity'],
+    queryFn: () => apiService.getRecentActivity(),
+  });
+
   // Mock data for charts - replace with actual API data
-  const userGrowthData = [
+  const userGrowthData = analyticsResponse?.data?.user_growth ?? [
     { month: 'Jan', users: 1200, institutes: 45, scholarships: 67 },
     { month: 'Feb', users: 1350, institutes: 52, scholarships: 78 },
     { month: 'Mar', users: 1480, institutes: 58, scholarships: 85 },
@@ -52,29 +65,14 @@ const Analytics = () => {
     { month: 'Dec', users: 2847, institutes: 156, scholarships: 89 }
   ];
 
-  const applicationTrends = [
-    { month: 'Jan', applications: 450, approved: 120, rejected: 80, pending: 250 },
-    { month: 'Feb', applications: 520, approved: 145, rejected: 95, pending: 280 },
-    { month: 'Mar', applications: 580, approved: 165, rejected: 110, pending: 305 },
-    { month: 'Apr', applications: 640, approved: 185, rejected: 125, pending: 330 },
-    { month: 'May', applications: 700, approved: 205, rejected: 140, pending: 355 },
-    { month: 'Jun', applications: 760, approved: 225, rejected: 155, pending: 380 },
-    { month: 'Jul', applications: 820, approved: 245, rejected: 170, pending: 405 },
-    { month: 'Aug', applications: 880, approved: 265, rejected: 185, pending: 430 },
-    { month: 'Sep', applications: 940, approved: 285, rejected: 200, pending: 455 },
-    { month: 'Oct', applications: 1000, approved: 305, rejected: 215, pending: 480 },
-    { month: 'Nov', applications: 1060, approved: 325, rejected: 230, pending: 505 },
-    { month: 'Dec', applications: 1120, approved: 345, rejected: 245, pending: 530 }
-  ];
-
-  const scholarshipDistribution = [
+  const scholarshipDistribution = analyticsResponse?.data?.scholarship_distribution ?? [
     { name: 'Merit-Based', value: 45, color: '#3B82F6' },
     { name: 'Need-Based', value: 30, color: '#10B981' },
     { name: 'Project-Based', value: 15, color: '#8B5CF6' },
     { name: 'Athletic', value: 10, color: '#F59E0B' }
   ];
 
-  const institutePerformance = [
+  const institutePerformance = analyticsResponse?.data?.institute_performance ?? [
     { name: 'University of Technology', students: 15000, scholarships: 25, rating: 4.8 },
     { name: 'State Community College', students: 8000, scholarships: 15, rating: 4.2 },
     { name: 'Tech Institute of Innovation', students: 5000, scholarships: 30, rating: 4.6 },
@@ -82,7 +80,7 @@ const Analytics = () => {
     { name: 'Engineering University', students: 12000, scholarships: 28, rating: 4.7 }
   ];
 
-  const topFields = [
+  const topFields = analyticsResponse?.data?.top_fields ?? [
     { field: 'Engineering', applications: 450, successRate: 78 },
     { field: 'Computer Science', applications: 380, successRate: 82 },
     { field: 'Business', applications: 320, successRate: 75 },
@@ -90,14 +88,14 @@ const Analytics = () => {
     { field: 'Arts & Humanities', applications: 240, successRate: 72 }
   ];
 
-  const recentActivity = [
+  const recentActivity = (activityResponse?.data ?? [
     { action: 'New user registered', time: '2 minutes ago', type: 'user', impact: 'low' },
     { action: 'Institute profile updated', time: '15 minutes ago', type: 'institute', impact: 'medium' },
     { action: 'New scholarship added', time: '1 hour ago', type: 'scholarship', impact: 'high' },
     { action: 'Application submitted', time: '2 hours ago', type: 'application', impact: 'medium' },
     { action: 'Scholarship deadline approaching', time: '3 hours ago', type: 'alert', impact: 'high' },
     { action: 'Institute verification completed', time: '4 hours ago', type: 'institute', impact: 'medium' }
-  ];
+  ]).filter((a: any) => a.type !== 'application'); // remove application items from analytics
 
   const getImpactBadge = (impact: string) => {
     switch (impact) {
@@ -165,7 +163,7 @@ const Analytics = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Key Metrics (removed Total Applications card) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -203,21 +201,9 @@ const Analytics = () => {
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+18%</span> from last month
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row 1 (removed Application Trends chart) */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* User Growth Chart */}
         <Card>
@@ -237,29 +223,6 @@ const Analytics = () => {
                 <Line type="monotone" dataKey="institutes" stroke="#10B981" strokeWidth={2} name="Institutes" />
                 <Line type="monotone" dataKey="scholarships" stroke="#8B5CF6" strokeWidth={2} name="Scholarships" />
               </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Application Trends */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Application Trends</CardTitle>
-            <CardDescription>Monthly application submissions and outcomes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={applicationTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="applications" fill="#3B82F6" name="Total Applications" />
-                <Bar dataKey="approved" fill="#10B981" name="Approved" />
-                <Bar dataKey="rejected" fill="#EF4444" name="Rejected" />
-                <Bar dataKey="pending" fill="#F59E0B" name="Pending" />
-              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

@@ -18,6 +18,12 @@ class ScholarshipController extends Controller
         try {
             $query = Scholarship::with(['institute'])->withCount('applications');
 
+            // Role scoping
+            $user = $request->user();
+            if (($user->role ?? null) === 'institute_admin') {
+                $query->where('institute_id', $user->institute_id ?? 0);
+            }
+
             // Search functionality
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
@@ -94,6 +100,11 @@ class ScholarshipController extends Controller
     public function store(Request $request)
     {
         try {
+            // Only super_admin/admin and institute_admin (for their own institute)
+            $user = $request->user();
+            if (!in_array($user->role ?? 'student', ['super_admin', 'admin', 'institute_admin'], true)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255',
                 'institute_id' => 'required|exists:institutes,id',
@@ -108,6 +119,7 @@ class ScholarshipController extends Controller
                 'requirements' => 'required|string',
                 'eligibility' => 'required|string',
                 'documents' => 'required|string',
+                'apply_link' => 'required|url',
                 'status' => 'sometimes|string|in:active,pending,expired,suspended',
             ]);
 
@@ -117,6 +129,12 @@ class ScholarshipController extends Controller
                     'message' => 'Validation failed',
                     'errors' => $validator->errors()
                 ], 422);
+            }
+
+            if (($user->role ?? null) === 'institute_admin') {
+                if (($user->institute_id ?? null) !== (int) $request->institute_id) {
+                    return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+                }
             }
 
             $scholarship = Scholarship::create($request->all());
@@ -148,6 +166,12 @@ class ScholarshipController extends Controller
         try {
             $scholarship = Scholarship::findOrFail($id);
 
+            // Role scoping
+            $user = $request->user();
+            if (($user->role ?? null) === 'institute_admin' && $scholarship->institute_id !== ($user->institute_id ?? 0)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+
             $validator = Validator::make($request->all(), [
                 'title' => 'sometimes|required|string|max:255',
                 'institute_id' => 'sometimes|required|exists:institutes,id',
@@ -162,6 +186,7 @@ class ScholarshipController extends Controller
                 'requirements' => 'sometimes|required|string',
                 'eligibility' => 'sometimes|required|string',
                 'documents' => 'sometimes|required|string',
+                'apply_link' => 'sometimes|required|url',
                 'status' => 'sometimes|required|string|in:active,pending,expired,suspended',
             ]);
 
@@ -197,6 +222,10 @@ class ScholarshipController extends Controller
     {
         try {
             $scholarship = Scholarship::findOrFail($id);
+            $user = request()->user();
+            if (($user->role ?? null) === 'institute_admin' && $scholarship->institute_id !== ($user->institute_id ?? 0)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
             
             // Update institute scholarships count
             $institute = $scholarship->institute;

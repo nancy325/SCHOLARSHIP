@@ -17,6 +17,16 @@ class InstituteController extends Controller
         try {
             $query = Institute::withCount('scholarships');
 
+            // Role scoping
+            $user = $request->user();
+            if (($user->role ?? null) === 'university_admin') {
+                // Expect university_admin to be associated via institutes they manage
+                // Scope to institutes that belong to their university (if stored) or none
+                $query->where('id', $user->institute_id ?? 0);
+            } elseif (($user->role ?? null) === 'institute_admin') {
+                $query->where('id', $user->institute_id ?? 0);
+            }
+
             // Search functionality
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
@@ -81,6 +91,11 @@ class InstituteController extends Controller
     public function store(Request $request)
     {
         try {
+            // Only super_admin and admin can create globally
+            $user = $request->user();
+            if (!in_array($user->role ?? 'student', ['super_admin', 'admin'], true)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'type' => 'required|string|in:university,community_college,technical_institute,liberal_arts',
@@ -129,6 +144,16 @@ class InstituteController extends Controller
     {
         try {
             $institute = Institute::findOrFail($id);
+
+            // Role scoping: only super_admin/admin, or the owner institute admin can update
+            $user = $request->user();
+            if (!in_array($user->role ?? 'student', ['super_admin', 'admin'], true)) {
+                if (($user->role ?? null) === 'institute_admin' && ($user->institute_id !== $institute->id)) {
+                    return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+                } elseif (($user->role ?? null) !== 'institute_admin') {
+                    return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+                }
+            }
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
@@ -179,6 +204,12 @@ class InstituteController extends Controller
     {
         try {
             $institute = Institute::findOrFail($id);
+
+            // Only super_admin and admin can delete
+            $user = request()->user();
+            if (!in_array($user->role ?? 'student', ['super_admin', 'admin'], true)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
             $institute->delete();
 
             return response()->json([

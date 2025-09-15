@@ -32,13 +32,15 @@ class UserController extends Controller
                 $query->where('category', $request->status);
             }
 
-            // Filter by role (admin status)
+            // Filter by role
             if ($request->has('role') && $request->role !== 'all') {
-                if ($request->role === 'admin') {
-                    $query->where('is_admin', true);
-                } else {
-                    $query->where('is_admin', false);
-                }
+                $query->where('role', $request->role);
+            }
+
+            // Role scoping: non super_admin cannot view super_admins
+            $current = $request->user();
+            if (($current->role ?? null) !== 'super_admin') {
+                $query->where('role', '!=', 'super_admin');
             }
 
             $users = $query->paginate($request->get('per_page', 15));
@@ -90,7 +92,7 @@ class UserController extends Controller
                 'email' => 'required|string|email|max:255|unique:users',
                 'password' => 'required|string|min:8',
                 'category' => 'required|string|in:high-school,diploma,undergraduate,postgraduate,other',
-                'is_admin' => 'boolean',
+                'role' => 'required|string|in:super_admin,admin,university_admin,institute_admin,student',
                 'institute_id' => 'nullable|exists:institutes,id',
             ]);
 
@@ -107,7 +109,7 @@ class UserController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'category' => $request->category,
-                'is_admin' => $request->is_admin ?? false,
+                'role' => $request->role,
                 'institute_id' => $request->institute_id,
             ]);
 
@@ -139,7 +141,7 @@ class UserController extends Controller
                 'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $id,
                 'password' => 'sometimes|required|string|min:8',
                 'category' => 'sometimes|required|string|in:high-school,diploma,undergraduate,postgraduate,other',
-                'is_admin' => 'boolean',
+                'role' => 'sometimes|required|string|in:super_admin,admin,university_admin,institute_admin,student',
                 'institute_id' => 'nullable|exists:institutes,id',
             ]);
 
@@ -151,7 +153,7 @@ class UserController extends Controller
                 ], 422);
             }
 
-            $updateData = $request->only(['name', 'email', 'category', 'is_admin', 'institute_id']);
+            $updateData = $request->only(['name', 'email', 'category', 'role', 'institute_id']);
             
             if ($request->has('password')) {
                 $updateData['password'] = Hash::make($request->password);
@@ -192,13 +194,13 @@ class UserController extends Controller
             
             $user = User::findOrFail($id);
             
-            // Prevent deletion of the last admin
-            if ($user->is_admin) {
-                $adminCount = User::where('is_admin', true)->count();
+            // Prevent deletion of the last super admin
+            if ($user->role === 'super_admin') {
+                $adminCount = User::where('role', 'super_admin')->count();
                 if ($adminCount <= 1) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Cannot delete the last admin user. At least one admin must remain in the system.'
+                        'message' => 'Cannot delete the last super admin. At least one super admin must remain.'
                     ], 403);
                 }
             }

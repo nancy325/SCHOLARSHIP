@@ -266,7 +266,6 @@ class AdminSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'category' => 'undergraduate',
                 'role' => 'student',
-                'is_admin' => false,
                 'institute_id' => $createdInstitutes[0]->id,
             ],
             [
@@ -275,7 +274,6 @@ class AdminSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'category' => 'graduate',
                 'role' => 'student',
-                'is_admin' => false,
                 'institute_id' => $createdInstitutes[1]->id,
             ],
             [
@@ -284,7 +282,6 @@ class AdminSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'category' => 'undergraduate',
                 'role' => 'student',
-                'is_admin' => false,
                 'institute_id' => $createdInstitutes[0]->id,
             ],
         ];
@@ -307,7 +304,6 @@ class AdminSeeder extends Seeder
                     'password' => Hash::make('password123'),
                     'category' => 'other',
                     'role' => 'university_admin',
-                    'is_admin' => true,
                     'university_id' => $charusatUniversity->id,
                     'institute_id' => null, // University admin doesn't belong to specific institute
                 ]

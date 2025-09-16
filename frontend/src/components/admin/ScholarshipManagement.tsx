@@ -50,6 +50,9 @@ const ScholarshipManagement = () => {
   const [isViewScholarshipOpen, setIsViewScholarshipOpen] = useState(false);
   const [selectedScholarship, setSelectedScholarship] = useState(null);
   const [scholarships, setScholarships] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [institutes, setInstitutes] = useState([]);
   const [universities, setUniversities] = useState([]);
   const institutesOnly = institutes;
@@ -127,13 +130,19 @@ const ScholarshipManagement = () => {
       const isAdminContext = ['super_admin', 'admin', 'university_admin', 'institute_admin'].includes(role as string);
       const response = await (isAdminContext ? apiService.getAdminScholarships({
         search: searchTerm,
-        type: typeFilter !== 'all' ? typeFilter : undefined
+        type: typeFilter !== 'all' ? typeFilter : undefined,
+        page: currentPage
       }) : apiService.getScholarships({
         search: searchTerm,
-        type: typeFilter !== 'all' ? typeFilter : undefined
+        type: typeFilter !== 'all' ? typeFilter : undefined,
+        page: currentPage
       }));
       if (response.success) {
-        setScholarships(response.data.data || []);
+        const pagination = response.data || {};
+        setScholarships(pagination.data || []);
+        if (typeof pagination.current_page === 'number') setCurrentPage(pagination.current_page);
+        if (typeof pagination.last_page === 'number') setLastPage(pagination.last_page);
+        if (typeof pagination.total === 'number') setTotalItems(pagination.total);
       } else {
         toast({
           title: "Error",
@@ -206,10 +215,18 @@ const ScholarshipManagement = () => {
   // Refetch scholarships when search or filter changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      // Reset to first page when filters/search change
+      setCurrentPage(prev => (searchTerm || typeFilter !== 'all') ? 1 : prev);
       fetchScholarships();
     }, 500);
     return () => clearTimeout(timeoutId);
   }, [searchTerm, typeFilter]);
+
+  // Refetch when page changes
+  useEffect(() => {
+    fetchScholarships();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   // Form handling functions
   const handleInputChange = (field: string, value: string) => {
@@ -756,6 +773,23 @@ const ScholarshipManagement = () => {
             </CardContent>
           </Card>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && (
+        <div className="flex items-center justify-between mt-6">
+          <div className="text-sm text-gray-600">
+            Page {currentPage} of {lastPage}{totalItems ? ` • ${totalItems} total` : ''}
+          </div>
+          <div className="space-x-2">
+            <Button variant="outline" disabled={currentPage <= 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))}>
+              Previous
+            </Button>
+            <Button variant="outline" disabled={currentPage >= lastPage} onClick={() => setCurrentPage(p => Math.min(lastPage, p + 1))}>
+              Next
+            </Button>
+          </div>
         </div>
       )}
 

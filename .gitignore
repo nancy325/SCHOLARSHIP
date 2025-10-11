@@ -1,10 +1,7 @@
 node_modules
 scholar_app.sql
 Scholarship.xlsx
-backend/API_DOCUMENTATION.md
 backend/API_ROUTES_SUMMARY.md
-backend/QUICK_START.md
 backend/FRONTEND_INTEGRATION.md
-backend/REFACTORING_SUMMARY.md
 postman/Scholarship_API_Environment.json
 postman/ScholarSnap_API.json

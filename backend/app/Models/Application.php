@@ -12,21 +12,11 @@ class Application extends Model
     protected $fillable = [
         'user_id',
         'scholarship_id',
-        'status',
-        'personal_statement',
-        'documents',
-        'gpa',
-        'additional_info',
-        'submitted_at',
-        'reviewed_at',
-        'review_notes',
+        'applied_at',
     ];
 
     protected $casts = [
-        'documents' => 'array',
-        'gpa' => 'decimal:2',
-        'submitted_at' => 'datetime',
-        'reviewed_at' => 'datetime',
+        'applied_at' => 'datetime',
     ];
 
     // Relationships

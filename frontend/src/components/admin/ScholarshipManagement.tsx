@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Plus, 
@@ -72,12 +72,32 @@ const ScholarshipManagement = () => {
   const role = (currentUser as any)?.role;
   const { toast } = useToast();
 
+  // Use ref to avoid stale closures for currentPage when fetching
+  const pageRef = useRef(currentPage);
+
+  // Keep the ref up-to-date with current page
+  useEffect(() => {
+    pageRef.current = currentPage;
+  }, [currentPage]);
+
   // Load scholarships and options on component mount
   useEffect(() => {
-    fetchScholarships();
+    fetchScholarships(1); // Always load the first page on mount (reset)
     fetchInstitutes();
     fetchUniversities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When the user changes search or filter, reset to page 1 and fetch
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, typeFilter]);
+
+  // When currentPage changes (either by search/filter or user page change), fetch for that page
+  useEffect(() => {
+    fetchScholarships(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   // Default form values when opening create dialog based on role
   useEffect(() => {
@@ -104,7 +124,6 @@ const ScholarshipManagement = () => {
 
   const prevUniversityIdForInstitute = () => {
     if (formData.university_id) return Number(formData.university_id);
-    // If universities list filtered to one, use it
     if (universities.length === 1) return universities[0].id;
     return undefined;
   };
@@ -124,25 +143,29 @@ const ScholarshipManagement = () => {
   };
 
   // Fetch scholarships from API
-  const fetchScholarships = async () => {
+  const fetchScholarships = async (page: number) => {
     setLoading(true);
     try {
       const isAdminContext = ['super_admin', 'admin', 'university_admin', 'institute_admin'].includes(role as string);
-      const response = await (isAdminContext ? apiService.getAdminScholarships({
-        search: searchTerm,
-        type: typeFilter !== 'all' ? typeFilter : undefined,
-        page: currentPage
-      }) : apiService.getScholarships({
-        search: searchTerm,
-        type: typeFilter !== 'all' ? typeFilter : undefined,
-        page: currentPage
-      }));
+      let response;
+      if (isAdminContext) {
+        response = await apiService.getAdminScholarships({
+          search: searchTerm,
+          type: typeFilter !== 'all' ? typeFilter : undefined,
+          page: page
+        });
+      } else {
+        response = await apiService.getScholarships({
+          search: searchTerm,
+          type: typeFilter !== 'all' ? typeFilter : undefined,
+          page: page
+        });
+      }
       if (response.success) {
         const pagination = response.data || {};
         setScholarships(pagination.data || []);
-        if (typeof pagination.current_page === 'number') setCurrentPage(pagination.current_page);
-        if (typeof pagination.last_page === 'number') setLastPage(pagination.last_page);
-        if (typeof pagination.total === 'number') setTotalItems(pagination.total);
+        setLastPage(typeof pagination.last_page === 'number' ? pagination.last_page : 1);
+        setTotalItems(typeof pagination.total === 'number' ? pagination.total : (pagination.data ? pagination.data.length : 0));
       } else {
         toast({
           title: "Error",
@@ -176,7 +199,7 @@ const ScholarshipManagement = () => {
 
   const fetchUniversities = async () => {
     try {
-      const response = await apiService.getUniversities();
+      const response = await apiService.getUniversitiesOptions();
       if (response.success) {
         const list = response.data || [];
         // Client-side scoping fallback
@@ -209,35 +232,16 @@ const ScholarshipManagement = () => {
         setFormData(prev => ({ ...prev, university_id: String(narrowed[0].id) }));
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [institutes]);
-
-  // Refetch scholarships when search or filter changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      // Reset to first page when filters/search change
-      setCurrentPage(prev => (searchTerm || typeFilter !== 'all') ? 1 : prev);
-      fetchScholarships();
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, typeFilter]);
-
-  // Refetch when page changes
-  useEffect(() => {
-    fetchScholarships();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, [institutes]);
 
   // Form handling functions
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => {
-      // Auto semantics: picking an institute makes it an institute-level scholarship
       if (field === 'institute_id') {
         const next: any = { ...prev, institute_id: value };
-        // If an institute was picked, set type to 'institute'
         if (value) {
           next.type = 'institute';
-          // Sync university_id from selected institute if available
           const inst = institutesOnly.find((i: any) => String(i.id) === String(value));
           if (inst?.university_id) {
             next.university_id = String(inst.university_id);
@@ -245,8 +249,6 @@ const ScholarshipManagement = () => {
         }
         return next;
       }
-
-      // Changing type clears the opposing association
       if (field === 'type') {
         if (value === 'university') {
           return { ...prev, type: value, institute_id: '' };
@@ -255,7 +257,6 @@ const ScholarshipManagement = () => {
           return { ...prev, type: value };
         }
       }
-
       return {
         ...prev,
         [field]: value
@@ -280,8 +281,6 @@ const ScholarshipManagement = () => {
   const handleCreateScholarship = async () => {
     setSubmitting(true);
     try {
-      // Enforce role-based payload constraints on client too
-      // Derive type from selections
       const selectedInstitute = institutesOnly.find((i: any) => String(i.id) === String(formData.institute_id));
       const derivedType = formData.institute_id ? 'institute' : (formData.university_id ? 'university' : formData.type);
       const payload: any = {
@@ -306,7 +305,8 @@ const ScholarshipManagement = () => {
         });
         setIsAddScholarshipOpen(false);
         resetForm();
-        fetchScholarships();
+        // Always fetch first page after add
+        setCurrentPage(1);
       } else {
         toast({
           title: "Error",
@@ -329,10 +329,8 @@ const ScholarshipManagement = () => {
   // Update scholarship
   const handleUpdateScholarship = async () => {
     if (!selectedScholarship) return;
-    
     setSubmitting(true);
     try {
-      // Enforce role-based payload constraints (match create rules)
       const selectedInstitute = institutesOnly.find((i: any) => String(i.id) === String(formData.institute_id));
       const derivedType = formData.institute_id ? 'institute' : (formData.university_id ? 'university' : formData.type);
       const payload: any = {
@@ -358,7 +356,8 @@ const ScholarshipManagement = () => {
         setIsEditScholarshipOpen(false);
         setSelectedScholarship(null);
         resetForm();
-        fetchScholarships();
+        // Always fetch current page after update (safe now that fetch doesn't reset page anymore)
+        fetchScholarships(pageRef.current);
       } else {
         toast({
           title: "Error",
@@ -383,7 +382,6 @@ const ScholarshipManagement = () => {
     if (!confirm('Are you sure you want to delete this scholarship? This action cannot be undone.')) {
       return;
     }
-
     try {
       const response = await apiService.deleteScholarship(scholarshipId);
       if (response.success) {
@@ -391,7 +389,12 @@ const ScholarshipManagement = () => {
           title: "Success",
           description: "Scholarship deleted successfully",
         });
-        fetchScholarships();
+        // If last item on the page, and not on first page, go to previous page
+        if (scholarships.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1); // Triggers fetch via effect
+        } else {
+          fetchScholarships(currentPage); // Use present page
+        }
       } else {
         toast({
           title: "Error",
@@ -409,7 +412,6 @@ const ScholarshipManagement = () => {
     }
   };
 
-  // No status in spec; keep placeholder if needed later
   const getStatusBadge = (_status: string) => null;
 
   const getTypeBadge = (type: string) => {
@@ -496,7 +498,6 @@ const ScholarshipManagement = () => {
                     onChange={(e) => handleInputChange('title', e.target.value)}
                   />
                 </div>
-                
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -596,7 +597,6 @@ const ScholarshipManagement = () => {
                   />
                 </div>
                 </div>
-              
               
               <div>
                 <Label htmlFor="description">Description</Label>

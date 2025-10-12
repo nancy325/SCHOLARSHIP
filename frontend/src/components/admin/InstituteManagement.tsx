@@ -114,7 +114,7 @@ const InstituteManagement = () => {
         if (role === 'university_admin') {
           console.log('Fetching universities for university_admin...');
           // This endpoint returns only the allowed university for university_admin
-          const resp = await apiService.getUniversities();
+          const resp = await apiService.getUniversitiesOptions();
           console.log('Universities response:', resp);
           if (resp.success) {
             const list: any[] = (resp as any).data || [];
@@ -138,7 +138,7 @@ const InstituteManagement = () => {
     if (isAddInstituteOpen) {
       (async () => {
         try {
-          const resp = await apiService.getUniversities();
+          const resp = await apiService.getUniversitiesOptions();
           if (resp.success) {
             setUniversities(resp.data || []);
           }
@@ -160,7 +160,7 @@ const InstituteManagement = () => {
       });
       
       if (response.success) {
-        const list: any[] = response.data.data;
+        const list: any[] = response.data || [];
         console.log('Raw institutes list:', list);
         // Client-side scoping for university_admin
         const scoped = (role === 'university_admin' && allowedUniversityId)
@@ -169,9 +169,9 @@ const InstituteManagement = () => {
         console.log('Scoped institutes list:', scoped);
         setInstitutes(scoped);
         setPagination({
-          current_page: response.data.current_page,
-          last_page: response.data.last_page,
-          total: response.data.total
+          current_page: response.pagination?.current_page || 1,
+          last_page: response.pagination?.last_page || 1,
+          total: response.pagination?.total || 0
         });
       } else {
         console.error('Failed to fetch institutes:', response.message);

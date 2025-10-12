@@ -11,6 +11,7 @@ import AdminLogin from "./pages/AdminLogin";
 import StudentDashboardPage from "./components/StudentDashboardPage";
 import AdminDashboard from "./components/AdminDashboard";
 import ContactUsPage from "./components/ContactUsPage";
+import ApiTest from "./components/ApiTest";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/student-dashboard" element={<StudentDashboardPage />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/api-test" element={<ApiTest />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

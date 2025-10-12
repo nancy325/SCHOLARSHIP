@@ -6,6 +6,12 @@ interface ApiResponse<T = any> {
   data?: T;
   errors?: any;
   error?: string;
+  pagination?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
 interface User {
@@ -171,127 +177,52 @@ class ApiService {
     localStorage.removeItem('user');
   }
 
-  // Admin Dashboard methods
-  async getDashboardStats(): Promise<ApiResponse> {
-    return this.request('/admin/dashboard/stats');
+  // Health check
+  async getHealth(): Promise<ApiResponse> {
+    return this.request('/health');
   }
 
-  async getRecentActivity(): Promise<ApiResponse> {
-    return this.request('/admin/dashboard/activity');
+  // Statistics
+  async getStats(): Promise<ApiResponse> {
+    return this.request('/stats');
   }
 
-  async getAnalytics(): Promise<ApiResponse> {
-    return this.request('/admin/dashboard/analytics');
-  }
-
-  // User Management
-  async getUsers(params?: { search?: string; status?: string; role?: string; page?: number }): Promise<ApiResponse> {
+  // Search scholarships
+  async searchScholarships(params?: { 
+    q?: string; 
+    type?: string; 
+    university_id?: number; 
+    institute_id?: number; 
+    per_page?: number 
+  }): Promise<ApiResponse> {
     const queryParams = new URLSearchParams();
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.role) queryParams.append('role', params.role);
-    if (params?.page) queryParams.append('page', params.page.toString());
-    
-    const query = queryParams.toString();
-    return this.request(`/admin/users${query ? `?${query}` : ''}`);
-  }
-
-  async getUser(id: number): Promise<ApiResponse> {
-    return this.request(`/admin/users/${id}`);
-  }
-
-  async createUser(userData: any): Promise<ApiResponse> {
-    return this.request('/admin/users', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-  }
-
-  async updateUser(id: number, userData: any): Promise<ApiResponse> {
-    return this.request(`/admin/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData),
-    });
-  }
-
-  async deleteUser(id: number): Promise<ApiResponse> {
-    return this.request(`/admin/users/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async getUserStats(): Promise<ApiResponse> {
-    return this.request('/admin/users/stats');
-  }
-
-  // Institute Management
-  async getInstitutes(params?: { search?: string; status?: string; type?: string; page?: number }): Promise<ApiResponse> {
-    const queryParams = new URLSearchParams();
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.type) queryParams.append('type', params.type);
-    if (params?.page) queryParams.append('page', params.page.toString());
-    
-    const query = queryParams.toString();
-    return this.request(`/admin/institutes${query ? `?${query}` : ''}`);
-  }
-
-  async getInstitute(id: number): Promise<ApiResponse> {
-    return this.request(`/admin/institutes/${id}`);
-  }
-
-  async createInstitute(instituteData: any): Promise<ApiResponse> {
-    console.log('API Service - Creating institute with data:', instituteData);
-    return this.request('/admin/institutes', {
-      method: 'POST',
-      body: JSON.stringify(instituteData),
-    });
-  }
-
-  async updateInstitute(id: number, instituteData: any): Promise<ApiResponse> {
-    return this.request(`/admin/institutes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(instituteData),
-    });
-  }
-
-  async deleteInstitute(id: number): Promise<ApiResponse> {
-    return this.request(`/admin/institutes/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async getInstituteStats(): Promise<ApiResponse> {
-    return this.request('/admin/institutes/stats');
-  }
-
-  // Scholarship Management (spec-aligned)
-  async getScholarships(params?: { search?: string; type?: string; university_id?: number; institute_id?: number; page?: number }): Promise<ApiResponse> {
-    const queryParams = new URLSearchParams();
-    if (params?.search) queryParams.append('search', params.search);
+    if (params?.q) queryParams.append('q', params.q);
     if (params?.type) queryParams.append('type', params.type);
     if (params?.university_id) queryParams.append('university_id', params.university_id.toString());
     if (params?.institute_id) queryParams.append('institute_id', params.institute_id.toString());
-    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
     
     const query = queryParams.toString();
-    return this.request(`/scholarships${query ? `?${query}` : ''}`);
+    return this.request(`/search${query ? `?${query}` : ''}`);
   }
 
-  // Admin Scholarship Management
-  async getAdminScholarships(params?: { search?: string; type?: string; university_id?: number; institute_id?: number; page?: number }): Promise<ApiResponse> {
-    const queryParams = new URLSearchParams();
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.type) queryParams.append('type', params.type);
-    if (params?.university_id) queryParams.append('university_id', params.university_id.toString());
-    if (params?.institute_id) queryParams.append('institute_id', params.institute_id.toString());
-    if (params?.page) queryParams.append('page', params.page.toString());
-    const query = queryParams.toString();
-    return this.request(`/admin/scholarships${query ? `?${query}` : ''}`);
+  // Scholarship types
+  async getScholarshipTypes(): Promise<ApiResponse> {
+    return this.request('/scholarship-types');
+  }
+
+  // User categories
+  async getUserCategories(): Promise<ApiResponse> {
+    return this.request('/user-categories');
+  }
+
+  // Scholarship Management
+  async getScholarships(params?: { search?: string; type?: string; page?: number }): Promise<ApiResponse> {
+    return this.get('/scholarships', params);
   }
 
   async getScholarship(id: number): Promise<ApiResponse> {
-    return this.request(`/scholarships/${id}`);
+    return this.request(`/scholarships?id=${id}`);
   }
 
   async createScholarship(scholarshipData: any): Promise<ApiResponse> {
@@ -302,37 +233,158 @@ class ApiService {
   }
 
   async updateScholarship(id: number, scholarshipData: any): Promise<ApiResponse> {
-    return this.request(`/scholarships/${id}`, {
+    // Include the scholarship ID in the request body
+    const requestData = { ...scholarshipData, id };
+    return this.request('/scholarships', {
       method: 'PUT',
-      body: JSON.stringify(scholarshipData),
+      body: JSON.stringify(requestData),
     });
   }
 
   async deleteScholarship(id: number): Promise<ApiResponse> {
-    return this.request(`/scholarships/${id}`, {
+    return this.request('/scholarships', { 
       method: 'DELETE',
+      body: JSON.stringify({ id })
     });
   }
 
+  // Options for dropdowns
+  async getInstitutesOptions(): Promise<ApiResponse> {
+    return this.request('/institutes/options');
+  }
+
+  async getUniversitiesOptions(): Promise<ApiResponse> {
+    return this.request('/universities/options');
+  }
+
+  // Profile management
+  async getProfile(): Promise<ApiResponse> {
+    return this.request('/profile');
+  }
+
+  async updateProfile(profileData: any): Promise<ApiResponse> {
+    return this.request('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  // Admin Dashboard
+  async getDashboardStats(): Promise<ApiResponse> {
+    return this.request('/admin/dashboard/stats');
+  }
+
+  async getRecentActivity(): Promise<ApiResponse> {
+    return this.request('/admin/dashboard/recent-activity');
+  }
+
+  // Analytics endpoint
+  async getAnalytics(): Promise<ApiResponse> {
+    return this.request('/admin/dashboard/stats');
+  }
+
+  // User Management
+  async getUsers(params?: { search?: string; status?: string; page?: number }): Promise<ApiResponse> {
+    return this.get('/admin/users', params);
+  }
+
+  async getUser(id: number): Promise<ApiResponse> {
+    return this.request(`/admin/users?id=${id}`);
+  }
+
+  async createUser(userData: any): Promise<ApiResponse> {
+    return this.request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async updateUser(id: number, userData: any): Promise<ApiResponse> {
+    // Include the user ID in the request body
+    const requestData = { ...userData, id };
+    return this.request('/admin/users', {
+      method: 'PUT',
+      body: JSON.stringify(requestData),
+    });
+  }
+
+  // Alternative method that uses a generic update endpoint (if you prefer this approach)
+  async updateUserById(userData: any): Promise<ApiResponse> {
+    // User ID must be included in userData
+    if (!userData.id) {
+      throw new Error('User ID is required in userData');
+    }
+    return this.request(`/admin/users/update`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async deleteUser(id: number): Promise<ApiResponse> {
+    return this.request('/admin/users', { 
+      method: 'DELETE',
+      body: JSON.stringify({ id })
+    });
+  }
+
+  // Institutes Management
+  async getInstitutes(params?: { search?: string; status?: string; page?: number }): Promise<ApiResponse> {
+    return this.get('/institutes', params);
+  }
+
+  async getInstitute(id: number): Promise<ApiResponse> {
+    return this.request(`/institutes/${id}`);
+  }
+
+  async createInstitute(instituteData: any): Promise<ApiResponse> {
+    return this.request('/institutes', {
+      method: 'POST',
+      body: JSON.stringify(instituteData),
+    });
+  }
+
+  async updateInstitute(id: number, instituteData: any): Promise<ApiResponse> {
+    return this.request(`/institutes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(instituteData),
+    });
+  }
+
+  async deleteInstitute(id: number): Promise<ApiResponse> {
+    return this.request(`/institutes/${id}`, { method: 'DELETE' });
+  }
+
+  // Scholarship-specific institutes endpoint
   async getScholarshipInstitutes(): Promise<ApiResponse> {
     return this.request('/institutes/options');
   }
 
-  async getUniversities(): Promise<ApiResponse> {
-    return this.request('/universities/options');
+  // Admin-specific scholarship endpoints
+  async getAdminScholarships(params?: { search?: string; type?: string; page?: number }): Promise<ApiResponse> {
+    return this.get('/scholarships', params);
   }
 
-  // Student Dashboard
-  async getStudentDashboard(): Promise<ApiResponse> {
-    return this.request('/student/dashboard');
+  // Universities Management
+  async getUniversities(): Promise<ApiResponse> {
+    return this.request('/universities');
   }
 
   async createUniversity(universityData: any): Promise<ApiResponse> {
-    return this.request('/admin/universities', {
+    return this.request('/universities', {
       method: 'POST',
       body: JSON.stringify(universityData),
     });
+  }
 
+  async updateUniversity(id: number, universityData: any): Promise<ApiResponse> {
+    return this.request(`/universities/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(universityData),
+    });
+  }
+
+  async deleteUniversity(id: number): Promise<ApiResponse> {
+    return this.request(`/universities/${id}`, { method: 'DELETE' });
   }
 }
 

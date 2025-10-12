@@ -6,7 +6,6 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Institute;
 use App\Models\Scholarship;
-use App\Models\Application;
 use App\Models\University;
 use Illuminate\Support\Facades\Hash;
 
@@ -599,44 +598,6 @@ class AdminSeeder extends Seeder
             }
         }
 
-        // Create sample applications
-        $applications = [
-            [
-                'user_id' => $createdUsers[0]->id,
-                'scholarship_id' => $createdScholarships[0]->id,
-                'status' => 'pending',
-                'personal_statement' => 'I am passionate about engineering and have maintained a 3.9 GPA throughout my studies.',
-                'gpa' => 3.9,
-                'submitted_at' => now()->subDays(2),
-            ],
-            [
-                'user_id' => $createdUsers[1]->id,
-                'scholarship_id' => $createdScholarships[1]->id,
-                'status' => 'approved',
-                'personal_statement' => 'I have dedicated over 200 hours to community service and have led several volunteer initiatives.',
-                'gpa' => 3.7,
-                'submitted_at' => now()->subDays(5),
-                'reviewed_at' => now()->subDays(1),
-            ],
-            [
-                'user_id' => $createdUsers[2]->id,
-                'scholarship_id' => $createdScholarships[2]->id,
-                'status' => 'pending',
-                'personal_statement' => 'My project focuses on developing AI solutions for environmental monitoring.',
-                'gpa' => 3.8,
-                'submitted_at' => now()->subDays(1),
-            ],
-        ];
-
-        foreach ($applications as $applicationData) {
-            Application::firstOrCreate(
-                [
-                    'user_id' => $applicationData['user_id'],
-                    'scholarship_id' => $applicationData['scholarship_id'],
-                ],
-                $applicationData
-            );
-        }
 
         $this->command->info('Sample data created successfully!');
         $this->command->info('Admin login: admin@scholarship.com / password123');

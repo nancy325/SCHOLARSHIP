@@ -26,6 +26,7 @@ import UserManagement from './admin/UserManagement';
 import InstituteManagement from './admin/InstituteManagement';
 import ScholarshipManagement from './admin/ScholarshipManagement';
 import Analytics from './admin/Analytics';
+import AdminApiTest from './AdminApiTest';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -122,6 +123,7 @@ const AdminDashboard = () => {
     { name: 'Institute Management', icon: Building2, tab: 'institutes' },
     { name: 'Scholarship Management', icon: GraduationCap, tab: 'scholarships' },
     { name: 'Analytics', icon: BarChart3, tab: 'analytics' },
+    { name: 'API Test', icon: Activity, tab: 'api-test' },
     { name: 'Settings', icon: Settings, tab: 'settings' }
   ];
 
@@ -265,6 +267,8 @@ const AdminDashboard = () => {
         return <ScholarshipManagement />;
       case 'analytics':
         return <Analytics />;
+      case 'api-test':
+        return <AdminApiTest />;
       case 'settings':
         return (
           <Card className="border-0 shadow-sm">

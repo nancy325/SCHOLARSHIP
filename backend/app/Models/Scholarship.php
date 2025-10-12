@@ -43,10 +43,4 @@ class Scholarship extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function applications()
-    {
-        return $this->hasMany(Application::class);
-    }
-
-    // Applications table not used in spec
 }

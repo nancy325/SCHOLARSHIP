@@ -47,6 +47,9 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [institutes, setInstitutes] = useState([]);
   const [universities, setUniversities] = useState([]);
@@ -86,15 +89,21 @@ const UserManagement = () => {
       });
 
       if (response.success) {
-        setUsers(response.data.data || []);
+        setUsers(response.data || []);
         setPagination({
-          current_page: response.data.current_page || 1,
-          last_page: response.data.last_page || 1,
-          total: response.data.total || 0
+          current_page: response.pagination?.current_page || 1,
+          last_page: response.pagination?.last_page || 1,
+          total: response.pagination?.total || 0
         });
+      } else {
+        console.error('Failed to fetch users:', response.message);
+        setUsers([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch users:', error);
+      setUsers([]);
+      const errorMessage = error?.response?.data?.message || 'Failed to fetch users. Please try again.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -102,9 +111,9 @@ const UserManagement = () => {
 
   const fetchInstitutes = async () => {
     try {
-      const response = await apiService.getInstitutes();
+      const response = await apiService.getInstitutesOptions();
       if (response.success) {
-        setInstitutes(response.data.data || []);
+        setInstitutes(response.data || []);
       }
     } catch (error) {
       console.error('Failed to fetch institutes:', error);
@@ -113,10 +122,9 @@ const UserManagement = () => {
 
   const fetchUniversities = async () => {
     try {
-      const response = await apiService.getUniversities();
+      const response = await apiService.getUniversitiesOptions();
       if (response.success) {
-        // Handle both plain options list and paginated shapes
-        setUniversities((response as any).data?.data || (response as any).data || []);
+        setUniversities(response.data || []);
       }
     } catch (error) {
       console.error('Failed to fetch universities:', error);
@@ -125,6 +133,7 @@ const UserManagement = () => {
 
   const handleCreateUser = async () => {
     try {
+      setCreating(true);
       const response = await apiService.createUser(newUser);
       if (response.success) {
         setIsAddUserOpen(false);
@@ -138,9 +147,23 @@ const UserManagement = () => {
           university_id: null
         });
         fetchUsers(); // Refresh the list
+        alert('User created successfully!');
+      } else {
+        const errorMessage = response.message || 'Failed to create user';
+        alert(errorMessage);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create user:', error);
+      const serverError = error?.response?.data;
+      if (serverError?.errors) {
+        const validationErrors = Object.values(serverError.errors).flat().join(', ');
+        alert(`Validation errors: ${validationErrors}`);
+      } else {
+        const errorMessage = serverError?.message || 'Failed to create user. Please try again.';
+        alert(errorMessage);
+      }
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -191,6 +214,7 @@ const UserManagement = () => {
 
   const handleUpdateUser = async () => {
     try {
+      setUpdating(true);
       const updateData = { ...editUser };
       if (!updateData.password) {
         delete updateData.password; // Don't send empty password
@@ -200,9 +224,23 @@ const UserManagement = () => {
       if (response.success) {
         setIsEditUserOpen(false);
         fetchUsers(); // Refresh the list
+        alert('User updated successfully!');
+      } else {
+        const errorMessage = response.message || 'Failed to update user';
+        alert(errorMessage);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update user:', error);
+      const serverError = error?.response?.data;
+      if (serverError?.errors) {
+        const validationErrors = Object.values(serverError.errors).flat().join(', ');
+        alert(`Validation errors: ${validationErrors}`);
+      } else {
+        const errorMessage = serverError?.message || 'Failed to update user. Please try again.';
+        alert(errorMessage);
+      }
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -212,12 +250,17 @@ const UserManagement = () => {
       if (response.success) {
         setSelectedUser(response.data);
         setIsViewUserOpen(true);
+      } else {
+        console.error('Failed to fetch user details:', response.message);
+        // Fallback to the user data we already have
+        setSelectedUser(user);
+        setIsViewUserOpen(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch user details:', error);
       // Fallback to the user data we already have
-    setSelectedUser(user);
-    setIsViewUserOpen(true);
+      setSelectedUser(user);
+      setIsViewUserOpen(true);
     }
   };
 
@@ -233,15 +276,21 @@ const UserManagement = () => {
     
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
+        setDeleting(true);
         const response = await apiService.deleteUser(userId);
         if (response.success) {
           fetchUsers(); // Refresh the list
+          alert('User deleted successfully!');
         } else {
           alert(response.message || 'Failed to delete user');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete user:', error);
-        alert('Failed to delete user. Please try again.');
+        const serverError = error?.response?.data;
+        const errorMessage = serverError?.message || 'Failed to delete user. Please try again.';
+        alert(errorMessage);
+      } finally {
+        setDeleting(false);
       }
     }
   };
@@ -380,7 +429,9 @@ const UserManagement = () => {
               <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateUser}>Create User</Button>
+              <Button onClick={handleCreateUser} disabled={creating}>
+                {creating ? 'Creating...' : 'Create User'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -516,9 +567,10 @@ const UserManagement = () => {
                           <DropdownMenuItem 
                             onClick={() => handleDeleteUser(user.id)}
                             className="text-red-600"
+                            disabled={deleting}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete User
+                            {deleting ? 'Deleting...' : 'Delete User'}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -741,7 +793,9 @@ const UserManagement = () => {
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateUser}>Update User</Button>
+            <Button onClick={handleUpdateUser} disabled={updating}>
+              {updating ? 'Updating...' : 'Update User'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

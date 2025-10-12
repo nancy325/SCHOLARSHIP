@@ -17,11 +17,25 @@ class ScholarshipController extends Controller
     ) {}
 
     /**
-     * Get all scholarships with filters and pagination
+     * Get all scholarships with filters and pagination, or get a single scholarship by ID
      */
     public function index(Request $request): JsonResponse
     {
         try {
+            // Check if ID is provided in query parameter
+            $scholarshipId = $request->query('id');
+            
+            if ($scholarshipId) {
+                // Get single scholarship by ID
+                $scholarship = $this->scholarshipService->getScholarshipById($scholarshipId);
+                
+                return response()->json([
+                    'success' => true,
+                    'data' => new ScholarshipResource($scholarship)
+                ], 200);
+            }
+            
+            // Get all scholarships with pagination
             $filters = [
                 'type' => $request->input('type'),
                 'university_id' => $request->input('university_id'),
@@ -33,38 +47,16 @@ class ScholarshipController extends Controller
             $user = $request->user();
 
             $scholarships = $this->scholarshipService->getScholarships($filters, $user, $perPage);
-
+            
             return response()->json([
                 'success' => true,
-                'data' => ScholarshipResource::collection($scholarships),
-                'meta' => [
+                'data' => [
+                    'data' => ScholarshipResource::collection($scholarships),
                     'current_page' => $scholarships->currentPage(),
                     'last_page' => $scholarships->lastPage(),
                     'per_page' => $scholarships->perPage(),
                     'total' => $scholarships->total(),
                 ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve scholarships',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get a single scholarship by ID
-     */
-    public function show(Request $request, int $id): JsonResponse
-    {
-        try {
-            $scholarship = $this->scholarshipService->getScholarshipById($id);
-
-            return response()->json([
-                'success' => true,
-                'data' => new ScholarshipResource($scholarship)
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -74,13 +66,16 @@ class ScholarshipController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
+            \Log::error('ScholarshipController index error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve scholarship',
+                'message' => 'Failed to retrieve scholarships',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+
 
     /**
      * Create a new scholarship
@@ -121,7 +116,7 @@ class ScholarshipController extends Controller
     /**
      * Update an existing scholarship
      */
-    public function update(UpdateScholarshipRequest $request, int $id): JsonResponse
+    public function update(UpdateScholarshipRequest $request): JsonResponse
     {
         try {
             $user = $request->user();
@@ -134,9 +129,23 @@ class ScholarshipController extends Controller
                 ], 403);
             }
 
+            // Always get scholarship ID from request body
+            $scholarshipId = $request->input('id');
+
+            if (!$scholarshipId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Scholarship ID is required in request body'
+                ], 400);
+            }
+
+            $validated = $request->validated();
+            // Remove id from validated data as it's not a field to update
+            unset($validated['id']);
+
             $scholarship = $this->scholarshipService->updateScholarship(
-                $id,
-                $request->validated(),
+                $scholarshipId,
+                $validated,
                 $user
             );
 
@@ -164,7 +173,7 @@ class ScholarshipController extends Controller
     /**
      * Delete a scholarship
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(Request $request): JsonResponse
     {
         try {
             $user = $request->user();
@@ -177,7 +186,26 @@ class ScholarshipController extends Controller
                 ], 403);
             }
 
-            $this->scholarshipService->deleteScholarship($id, $user);
+            // Ensure request is JSON
+            if (!$request->isJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request must be JSON'
+                ], 415);
+            }
+
+            // Get scholarship ID from JSON request body
+            $data = $request->json()->all();
+            $scholarshipId = $data['id'] ?? null;
+
+            if (!$scholarshipId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Scholarship ID is required in request body'
+                ], 400);
+            }
+
+            $this->scholarshipService->deleteScholarship($scholarshipId, $user);
 
             return response()->json([
                 'success' => true,
@@ -196,6 +224,88 @@ class ScholarshipController extends Controller
                 'message' => 'Failed to delete scholarship',
                 'error' => $e->getMessage()
             ], 400);
+        }
+    }
+
+    /**
+     * Get statistics for scholarships
+     */
+    public function stats(Request $request): JsonResponse
+    {
+        try {
+            $totalScholarships = \App\Models\Scholarship::count();
+            $activeScholarships = \App\Models\Scholarship::where('deadline', '>=', now())->count();
+            $governmentScholarships = \App\Models\Scholarship::where('type', 'government')->count();
+            $privateScholarships = \App\Models\Scholarship::where('type', 'private')->count();
+            $universityScholarships = \App\Models\Scholarship::where('type', 'university')->count();
+            $instituteScholarships = \App\Models\Scholarship::where('type', 'institute')->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_scholarships' => $totalScholarships,
+                    'active_scholarships' => $activeScholarships,
+                    'by_type' => [
+                        'government' => $governmentScholarships,
+                        'private' => $privateScholarships,
+                        'university' => $universityScholarships,
+                        'institute' => $instituteScholarships
+                    ]
+                ],
+                'message' => 'Statistics retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Search scholarships with filters
+     */
+    public function search(Request $request): JsonResponse
+    {
+        try {
+            $query = $request->get('q', '');
+            $type = $request->get('type');
+            $universityId = $request->get('university_id');
+            $instituteId = $request->get('institute_id');
+            $perPage = $request->get('per_page', 15);
+
+            $scholarships = \App\Models\Scholarship::with(['university:id,name', 'institute:id,name'])
+                ->when($query, function ($q) use ($query) {
+                    $q->where(function ($subQ) use ($query) {
+                        $subQ->where('title', 'like', "%{$query}%")
+                             ->orWhere('description', 'like', "%{$query}%");
+                    });
+                })
+                ->when($type, function ($q) use ($type) {
+                    $q->where('type', $type);
+                })
+                ->when($universityId, function ($q) use ($universityId) {
+                    $q->where('university_id', $universityId);
+                })
+                ->when($instituteId, function ($q) use ($instituteId) {
+                    $q->where('institute_id', $instituteId);
+                })
+                ->where('deadline', '>=', now())
+                ->orderBy('deadline', 'asc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $scholarships,
+                'message' => 'Search completed successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Search failed',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

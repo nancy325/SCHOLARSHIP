@@ -23,6 +23,7 @@ class UpdateScholarshipRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => ['required', 'integer', 'exists:scholarships,id'],
             'title' => ['sometimes', 'required', 'string', 'max:150'],
             'description' => ['sometimes', 'required', 'string'],
             'type' => ['sometimes', 'required', 'string', 'in:government,private,university,institute'],

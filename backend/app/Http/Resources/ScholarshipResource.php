@@ -28,19 +28,19 @@ class ScholarshipResource extends JsonResource
             'created_by' => $this->created_by,
             
             // Relationships
-            'university' => $this->when($this->relationLoaded('university'), function () {
+            'university' => $this->when($this->relationLoaded('university') && $this->university, function () {
                 return [
                     'id' => $this->university->id,
                     'name' => $this->university->name,
                 ];
             }),
-            'institute' => $this->when($this->relationLoaded('institute'), function () {
+            'institute' => $this->when($this->relationLoaded('institute') && $this->institute, function () {
                 return [
                     'id' => $this->institute->id,
                     'name' => $this->institute->name,
                 ];
             }),
-            'creator' => $this->when($this->relationLoaded('creator'), function () {
+            'creator' => $this->when($this->relationLoaded('creator') && $this->creator, function () {
                 return [
                     'id' => $this->creator->id,
                     'name' => $this->creator->name,

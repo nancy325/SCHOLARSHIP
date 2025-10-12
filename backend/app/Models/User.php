@@ -52,10 +52,6 @@ class User extends Authenticatable
     }
 
     // Relationships
-    public function applications()
-    {
-        return $this->hasMany(Application::class);
-    }
 
     public function institute()
     {

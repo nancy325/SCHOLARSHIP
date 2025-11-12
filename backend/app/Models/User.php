@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role',
         'institute_id',
         'university_id',
+        'RecStatus',
     ];
 
     /**

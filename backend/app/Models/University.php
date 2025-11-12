@@ -21,6 +21,7 @@ class University extends Model
         'accreditation',
         'students',
         'rating',
+        'RecStatus',
     ];
 
     public function institutes()

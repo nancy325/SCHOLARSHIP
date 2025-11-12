@@ -60,7 +60,8 @@ const UserManagement = () => {
     category: 'undergraduate',
     role: 'student',
     institute_id: null,
-    university_id: null
+    university_id: null,
+    RecStatus: 'active'
   });
   const [editUser, setEditUser] = useState<any>({
     name: '',
@@ -69,7 +70,8 @@ const UserManagement = () => {
     category: 'undergraduate',
     role: 'student',
     institute_id: null,
-    university_id: null
+    university_id: null,
+    RecStatus: 'active'
   });
 
   // Fetch users from API
@@ -144,7 +146,8 @@ const UserManagement = () => {
           category: 'undergraduate',
           role: 'student',
           institute_id: null,
-          university_id: null
+          university_id: null,
+          RecStatus: 'active'
         });
         fetchUsers(); // Refresh the list
         alert('User created successfully!');
@@ -168,7 +171,8 @@ const UserManagement = () => {
   };
 
   // No need for client-side filtering since API handles it
-  const filteredUsers = users;
+  // Sorted by user ID in ascending order
+  const filteredUsers = [...users].sort((a, b) => a.id - b.id);
 
   const getStatusBadge = (category: string) => {
     switch (category) {
@@ -198,6 +202,17 @@ const UserManagement = () => {
     return map[role] ?? <Badge variant="outline">{role || 'Student'}</Badge>;
   };
 
+  const getRecStatusBadge = (recStatus: string) => {
+    switch (recStatus) {
+      case 'active':
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case 'inactive':
+        return <Badge className="bg-red-100 text-red-800">Inactive</Badge>;
+      default:
+        return <Badge variant="outline">{recStatus || 'Active'}</Badge>;
+    }
+  };
+
   const handleEditUser = (user: any) => {
     setSelectedUser(user);
     setEditUser({
@@ -207,7 +222,8 @@ const UserManagement = () => {
       category: user.category,
       role: user.role || 'student',
       institute_id: user.institute_id,
-      university_id: user.university_id
+      university_id: user.university_id,
+      RecStatus: user.RecStatus || 'active'
     });
     setIsEditUserOpen(true);
   };
@@ -406,8 +422,8 @@ const UserManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="role">Role</Label>
+              <div>
+                <Label htmlFor="role">Role</Label>
                   <Select 
                     value={newUser.role}
                     onValueChange={(value) => setNewUser({...newUser, role: value})}
@@ -420,6 +436,21 @@ const UserManagement = () => {
                       <SelectItem value="institute_admin">Institute Admin</SelectItem>
                       <SelectItem value="university_admin">University Admin</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="recStatus">RecStatus</Label>
+                  <Select 
+                    value={newUser.RecStatus || 'active'}
+                    onValueChange={(value) => setNewUser({...newUser, RecStatus: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -452,10 +483,10 @@ const UserManagement = () => {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="undergraduate">Undergraduate</SelectItem>
                 <SelectItem value="graduate">Graduate</SelectItem>
                 <SelectItem value="high-school">High School</SelectItem>
@@ -487,8 +518,9 @@ const UserManagement = () => {
                   <th className="text-left py-3 px-4 font-medium">User</th>
                   <th className="text-left py-3 px-4 font-medium">Contact</th>
                   <th className="text-left py-3 px-4 font-medium">Institute</th>
-                  <th className="text-left py-3 px-4 font-medium">Status</th>
+                  <th className="text-left py-3 px-4 font-medium">Category</th>
                   <th className="text-left py-3 px-4 font-medium">Role</th>
+                  <th className="text-left py-3 px-4 font-medium">RecStatus</th>
                   {/* <th className="text-left py-3 px-4 font-medium">Applications</th> */}
                   <th className="text-left py-3 px-4 font-medium">Last Login</th>
                   <th className="text-left py-3 px-4 font-medium">Actions</th>
@@ -535,6 +567,9 @@ const UserManagement = () => {
                     </td>
                     <td className="py-3 px-4">
                       {getRoleBadge(user.role || 'student')}
+                    </td>
+                    <td className="py-3 px-4">
+                      {getRecStatusBadge(user.RecStatus || 'active')}
                     </td>
                     {/* <td className="py-3 px-4">
                       <div className="text-center">
@@ -625,6 +660,12 @@ const UserManagement = () => {
                   <Label>Category</Label>
                   <div>{getStatusBadge(selectedUser.category)}</div>
                 </div>
+                <div>
+                  <Label>RecStatus</Label>
+                  <div>{getRecStatusBadge(selectedUser.RecStatus || 'active')}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Institute</Label>
                   <div className="text-sm font-medium">{selectedUser.institute?.name || 'No Institute'}</div>
@@ -784,6 +825,21 @@ const UserManagement = () => {
                     <SelectItem value="institute_admin">Institute Admin</SelectItem>
                     <SelectItem value="university_admin">University Admin</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-recStatus">RecStatus</Label>
+                <Select 
+                  value={editUser.RecStatus || 'active'}
+                  onValueChange={(value) => setEditUser({...editUser, RecStatus: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

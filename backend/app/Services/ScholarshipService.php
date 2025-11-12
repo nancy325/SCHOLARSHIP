@@ -21,6 +21,11 @@ class ScholarshipService
     {
         $query = Scholarship::query()->with(['university:id,name', 'institute:id,name', 'creator:id,name']);
 
+        // Filter by RecStatus='active' by default (soft delete)
+        if (empty($filters['include_inactive']) || $filters['include_inactive'] !== 'true') {
+            $query->where('RecStatus', 'active');
+        }
+
         // Apply filters
         if (!empty($filters['type'])) {
             $query->where('type', $filters['type']);
@@ -52,7 +57,9 @@ class ScholarshipService
      */
     public function getScholarshipById(int $id): Scholarship
     {
-        return Scholarship::with(['university:id,name', 'institute:id,name', 'creator:id,name'])->findOrFail($id);
+        return Scholarship::with(['university:id,name', 'institute:id,name', 'creator:id,name'])
+            ->where('RecStatus', 'active')
+            ->findOrFail($id);
     }
 
     /**
@@ -71,8 +78,9 @@ class ScholarshipService
         // Apply role-based defaults
         $data = $this->applyRoleDefaults($user, $data);
 
-        // Add creator
+        // Add creator and set RecStatus
         $data['created_by'] = $user->id;
+        $data['RecStatus'] = $data['RecStatus'] ?? 'active';
 
         return Scholarship::create($data);
     }
@@ -116,7 +124,10 @@ class ScholarshipService
         // Check if user can delete this scholarship
         $this->checkDeletePermission($user, $scholarship);
 
-        return $scholarship->delete();
+        // Soft delete: set RecStatus to 'inactive' instead of actually deleting
+        $scholarship->update(['RecStatus' => 'inactive']);
+
+        return true;
     }
 
     /**

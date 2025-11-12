@@ -11,13 +11,42 @@ use Illuminate\Validation\ValidationException;
 class InstituteController extends Controller
 {
     /**
-     * Get all institutes with pagination
+     * Get all institutes with pagination and filters
      */
     public function index(Request $request): JsonResponse
     {
         try {
             $perPage = $request->integer('per_page', 15);
-            $institutes = Institute::with('university:id,name')->paginate($perPage);
+            $page = $request->integer('page', 1);
+            
+            $query = Institute::with('university:id,name');
+            
+            // Filter by RecStatus='active' by default (soft delete)
+            if (!$request->has('include_inactive') || $request->input('include_inactive') !== 'true') {
+                $query->where('RecStatus', 'active');
+            }
+            
+            // Apply search filter
+            if ($request->has('search') && $request->input('search')) {
+                $search = $request->input('search');
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+            
+            // Apply status filter
+            if ($request->has('status') && $request->input('status') !== 'all') {
+                $query->where('status', $request->input('status'));
+            }
+            
+            // Apply university filter
+            if ($request->has('university_id') && $request->input('university_id')) {
+                $query->where('university_id', $request->input('university_id'));
+            }
+            
+            $institutes = $query->orderBy('name')->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json([
                 'success' => true,
@@ -44,7 +73,9 @@ class InstituteController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $institute = Institute::with('university:id,name')->findOrFail($id);
+            $institute = Institute::with('university:id,name')
+                ->where('RecStatus', 'active')
+                ->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -89,6 +120,7 @@ class InstituteController extends Controller
             ]);
 
             $validated['created_by'] = $request->user()->id;
+            $validated['RecStatus'] = $validated['RecStatus'] ?? 'active';
             $institute = Institute::create($validated);
 
             return response()->json([
@@ -171,7 +203,8 @@ class InstituteController extends Controller
     {
         try {
             $institute = Institute::findOrFail($id);
-            $institute->delete();
+            // Soft delete: set RecStatus to 'inactive' instead of actually deleting
+            $institute->update(['RecStatus' => 'inactive']);
 
             return response()->json([
                 'success' => true,

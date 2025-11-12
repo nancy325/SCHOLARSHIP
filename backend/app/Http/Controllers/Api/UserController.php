@@ -30,11 +30,39 @@ class UserController extends Controller
                 ], 200);
             }
             
-            // Get all users with pagination
+            // Get all users with pagination and filters
             $perPage = $request->integer('per_page', 15);
-            $users = User::with(['institute:id,name,address', 'university:id,name'])
-                ->orderBy('created_at', 'desc')
-                ->paginate($perPage);
+            $page = $request->integer('page', 1);
+            
+            $query = User::with(['institute:id,name,address', 'university:id,name']);
+            
+            // Filter by RecStatus='active' by default (soft delete)
+            if (!$request->has('include_inactive') || $request->input('include_inactive') !== 'true') {
+                $query->where('RecStatus', 'active');
+            }
+            
+            // Apply search filter
+            if ($request->has('search') && $request->input('search')) {
+                $search = $request->input('search');
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            
+            // Apply status filter (category)
+            if ($request->has('status') && $request->input('status') !== 'all') {
+                $query->where('category', $request->input('status'));
+            }
+            
+            // Apply RecStatus filter (if include_inactive is true, allow filtering)
+            if ($request->has('rec_status') && $request->input('rec_status') !== 'all') {
+                $query->where('RecStatus', $request->input('rec_status'));
+            }
+            
+            // Sort by ID descending (latest ID/user first)
+            $users = $query->orderBy('id', 'desc')
+                ->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json([
                 'success' => true,
@@ -77,10 +105,12 @@ class UserController extends Controller
                 'role' => 'nullable|string|in:student,institute_admin,university_admin,admin',
                 'institute_id' => 'nullable|exists:institutes,id',
                 'university_id' => 'nullable|exists:universities,id',
+                'RecStatus' => 'nullable|string|in:active,inactive',
             ]);
 
             $validated['password'] = Hash::make($validated['password']);
             $validated['role'] = $validated['role'] ?? 'student';
+            $validated['RecStatus'] = $validated['RecStatus'] ?? 'active';
 
             $user = User::create($validated);
 
@@ -133,6 +163,7 @@ class UserController extends Controller
                 'role' => 'nullable|string|in:student,institute_admin,university_admin,admin',
                 'institute_id' => 'nullable|exists:institutes,id',
                 'university_id' => 'nullable|exists:universities,id',
+                'RecStatus' => 'nullable|string|in:active,inactive',
             ]);
 
             // Remove id from validated data as it's not a field to update
@@ -216,7 +247,8 @@ class UserController extends Controller
                 ], 403);
             }
 
-            $user->delete();
+            // Soft delete: set RecStatus to 'inactive' instead of actually deleting
+            $user->update(['RecStatus' => 'inactive']);
 
             return response()->json([
                 'success' => true,

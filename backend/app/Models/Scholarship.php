@@ -20,6 +20,7 @@ class Scholarship extends Model
         'start_date',
         'apply_link',
         'created_by',
+        'RecStatus',
     ];
 
     protected $casts = [

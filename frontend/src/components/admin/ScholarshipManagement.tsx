@@ -45,6 +45,8 @@ import { apiService } from '@/services/api';
 const ScholarshipManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [universityFilter, setUniversityFilter] = useState('all');
+  const [instituteFilter, setInstituteFilter] = useState('all');
   const [isAddScholarshipOpen, setIsAddScholarshipOpen] = useState(false);
   const [isEditScholarshipOpen, setIsEditScholarshipOpen] = useState(false);
   const [isViewScholarshipOpen, setIsViewScholarshipOpen] = useState(false);
@@ -91,7 +93,7 @@ const ScholarshipManagement = () => {
   // When the user changes search or filter, reset to page 1 and fetch
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter]);
+  }, [searchTerm, typeFilter, universityFilter, instituteFilter]);
 
   // When currentPage changes (either by search/filter or user page change), fetch for that page
   useEffect(() => {
@@ -148,18 +150,24 @@ const ScholarshipManagement = () => {
     try {
       const isAdminContext = ['super_admin', 'admin', 'university_admin', 'institute_admin'].includes(role as string);
       let response;
+      const params: any = {
+        search: searchTerm,
+        type: typeFilter !== 'all' ? typeFilter : undefined,
+        page: page
+      };
+      
+      if (universityFilter !== 'all') {
+        params.university_id = Number(universityFilter);
+      }
+      
+      if (instituteFilter !== 'all') {
+        params.institute_id = Number(instituteFilter);
+      }
+      
       if (isAdminContext) {
-        response = await apiService.getAdminScholarships({
-          search: searchTerm,
-          type: typeFilter !== 'all' ? typeFilter : undefined,
-          page: page
-        });
+        response = await apiService.getAdminScholarships(params);
       } else {
-        response = await apiService.getScholarships({
-          search: searchTerm,
-          type: typeFilter !== 'all' ? typeFilter : undefined,
-          page: page
-        });
+        response = await apiService.getScholarships(params);
       }
       if (response.success) {
         const pagination = response.data || {};
@@ -670,6 +678,44 @@ const ScholarshipManagement = () => {
                 <SelectItem value="institute">Institute</SelectItem>
               </SelectContent>
             </Select>
+            {(role === 'super_admin' || role === 'admin') && (
+              <Select value={universityFilter} onValueChange={(value) => {
+                setUniversityFilter(value);
+                setInstituteFilter('all'); // Reset institute filter when university changes
+              }}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by university" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Universities</SelectItem>
+                  {universities.map((university: any) => (
+                    <SelectItem key={university.id} value={university.id.toString()}>
+                      {university.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {(role === 'super_admin' || role === 'admin') && (
+              <Select 
+                value={instituteFilter} 
+                onValueChange={setInstituteFilter}
+              >
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by institute" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Institutes</SelectItem>
+                  {institutesOnly
+                    .filter((inst: any) => universityFilter === 'all' || Number(inst.university_id) === Number(universityFilter))
+                    .map((inst: any) => (
+                      <SelectItem key={inst.id} value={inst.id.toString()}>
+                        {inst.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardContent>
       </Card>

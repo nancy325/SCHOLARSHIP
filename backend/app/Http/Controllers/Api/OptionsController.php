@@ -16,7 +16,9 @@ class OptionsController extends Controller
     public function institutes(Request $request): JsonResponse
     {
         try {
-            $query = Institute::select('id', 'name', 'university_id')->orderBy('name');
+            $query = Institute::select('id', 'name', 'university_id')
+                ->where('RecStatus', 'active')
+                ->orderBy('name');
 
             return response()->json([
                 'success' => true,
@@ -38,7 +40,9 @@ class OptionsController extends Controller
     public function universities(Request $request): JsonResponse
     {
         try {
-            $query = University::select('id', 'name')->orderBy('name');
+            $query = University::select('id', 'name')
+                ->where('RecStatus', 'active')
+                ->orderBy('name');
             $user = $request->user();
 
             if ($user && ($user->role ?? null) === 'university_admin') {

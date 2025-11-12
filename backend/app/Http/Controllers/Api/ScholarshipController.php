@@ -233,12 +233,12 @@ class ScholarshipController extends Controller
     public function stats(Request $request): JsonResponse
     {
         try {
-            $totalScholarships = \App\Models\Scholarship::count();
-            $activeScholarships = \App\Models\Scholarship::where('deadline', '>=', now())->count();
-            $governmentScholarships = \App\Models\Scholarship::where('type', 'government')->count();
-            $privateScholarships = \App\Models\Scholarship::where('type', 'private')->count();
-            $universityScholarships = \App\Models\Scholarship::where('type', 'university')->count();
-            $instituteScholarships = \App\Models\Scholarship::where('type', 'institute')->count();
+            $totalScholarships = \App\Models\Scholarship::where('RecStatus', 'active')->count();
+            $activeScholarships = \App\Models\Scholarship::where('RecStatus', 'active')->where('deadline', '>=', now())->count();
+            $governmentScholarships = \App\Models\Scholarship::where('RecStatus', 'active')->where('type', 'government')->count();
+            $privateScholarships = \App\Models\Scholarship::where('RecStatus', 'active')->where('type', 'private')->count();
+            $universityScholarships = \App\Models\Scholarship::where('RecStatus', 'active')->where('type', 'university')->count();
+            $instituteScholarships = \App\Models\Scholarship::where('RecStatus', 'active')->where('type', 'institute')->count();
 
             return response()->json([
                 'success' => true,
@@ -276,6 +276,7 @@ class ScholarshipController extends Controller
             $perPage = $request->get('per_page', 15);
 
             $scholarships = \App\Models\Scholarship::with(['university:id,name', 'institute:id,name'])
+                ->where('RecStatus', 'active') // Only show active records
                 ->when($query, function ($q) use ($query) {
                     $q->where(function ($subQ) use ($query) {
                         $subQ->where('title', 'like', "%{$query}%")

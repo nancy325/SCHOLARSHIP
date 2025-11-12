@@ -17,7 +17,16 @@ class UniversityController extends Controller
     {
         try {
             $perPage = $request->integer('per_page', 15);
-            $universities = University::paginate($perPage);
+            $page = $request->integer('page', 1);
+            
+            $query = University::query();
+            
+            // Filter by RecStatus='active' by default (soft delete)
+            if (!$request->has('include_inactive') || $request->input('include_inactive') !== 'true') {
+                $query->where('RecStatus', 'active');
+            }
+            
+            $universities = $query->orderBy('name')->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json([
                 'success' => true,
@@ -44,7 +53,7 @@ class UniversityController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $university = University::findOrFail($id);
+            $university = University::where('RecStatus', 'active')->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -85,6 +94,7 @@ class UniversityController extends Controller
             ]);
 
             $validated['created_by'] = $request->user()->id;
+            $validated['RecStatus'] = $validated['RecStatus'] ?? 'active';
             $university = University::create($validated);
 
             return response()->json([
@@ -163,7 +173,8 @@ class UniversityController extends Controller
     {
         try {
             $university = University::findOrFail($id);
-            $university->delete();
+            // Soft delete: set RecStatus to 'inactive' instead of actually deleting
+            $university->update(['RecStatus' => 'inactive']);
 
             return response()->json([
                 'success' => true,

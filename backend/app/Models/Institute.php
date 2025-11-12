@@ -26,6 +26,7 @@ class Institute extends Model
         'rating',
         'contact_person',
         'contact_phone',
+        'RecStatus',
     ];
 
     public function university()

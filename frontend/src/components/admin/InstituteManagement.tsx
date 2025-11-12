@@ -44,14 +44,19 @@ import { Switch } from '@/components/ui/switch';
 const InstituteManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [universityFilter, setUniversityFilter] = useState('all');
   const [isAddInstituteOpen, setIsAddInstituteOpen] = useState(false);
   const [isEditInstituteOpen, setIsEditInstituteOpen] = useState(false);
   const [isViewInstituteOpen, setIsViewInstituteOpen] = useState(false);
   const [selectedInstitute, setSelectedInstitute] = useState(null);
   const [institutes, setInstitutes] = useState([]);
+  const [universitiesList, setUniversitiesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingUniversities, setLoadingUniversities] = useState(true);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [universities, setUniversities] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'institutes' | 'universities'>('institutes');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [createNewUniversity, setCreateNewUniversity] = useState(false);
   const [selectedUniversityId, setSelectedUniversityId] = useState<string>('');
   const [newUniversity, setNewUniversity] = useState({
@@ -102,10 +107,25 @@ const InstituteManagement = () => {
   const role = (currentUser as any)?.role;
   const [allowedUniversityId, setAllowedUniversityId] = useState<number | undefined>(undefined);
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Fetch institutes from API
   useEffect(() => {
     fetchInstitutes();
-  }, [searchTerm, statusFilter, allowedUniversityId]);
+  }, [debouncedSearchTerm, statusFilter, universityFilter, allowedUniversityId]);
+
+  // Fetch universities from API
+  useEffect(() => {
+    if (activeTab === 'universities') {
+      fetchUniversities();
+    }
+  }, [activeTab]);
 
   // Determine allowed university for university_admin using scoped options endpoint
   useEffect(() => {
@@ -133,37 +153,52 @@ const InstituteManagement = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load universities when the Add dialog opens
+  // Load universities for filters and dropdowns
   useEffect(() => {
-    if (isAddInstituteOpen) {
-      (async () => {
-        try {
-          const resp = await apiService.getUniversitiesOptions();
-          if (resp.success) {
-            setUniversities(resp.data || []);
-          }
-        } catch (e) {
-          console.error('Failed to load universities', e);
+    (async () => {
+      try {
+        // Use getUniversities to get all active universities for the filter dropdown
+        // Request a large per_page to get all active universities
+        // Backend already filters by RecStatus='active' by default
+        const resp = await apiService.getUniversities({ per_page: 1000 });
+        if (resp.success) {
+          const universitiesList = resp.data || [];
+          // Additional safety check: filter only active universities (backend should already do this)
+          const activeUniversities = universitiesList.filter((u: any) => 
+            !u.RecStatus || u.RecStatus === 'active'
+          );
+          console.log('Loaded universities for filter:', activeUniversities.length, 'active universities');
+          setUniversities(activeUniversities);
+        } else {
+          console.error('Failed to load universities for filter:', resp.message);
+          setUniversities([]);
         }
-      })();
-    }
-  }, [isAddInstituteOpen]);
+      } catch (e) {
+        console.error('Failed to load universities for filter', e);
+        setUniversities([]);
+      }
+    })();
+  }, []);
 
   const fetchInstitutes = async () => {
     try {
       setLoading(true);
       console.log('Fetching institutes with role:', role, 'allowedUniversityId:', allowedUniversityId);
+      // Reset to page 1 when filters change
+      const currentPage = 1;
       const response = await apiService.getInstitutes({
-        search: searchTerm,
-        status: statusFilter,
-        page: pagination.current_page
+        search: debouncedSearchTerm || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        university_id: universityFilter !== 'all' && universityFilter ? Number(universityFilter) : undefined,
+        page: currentPage,
+        per_page: 15
       });
       
       if (response.success) {
         const list: any[] = response.data || [];
         console.log('Raw institutes list:', list);
-        // Client-side scoping for university_admin
-        const scoped = (role === 'university_admin' && allowedUniversityId)
+        // Client-side scoping for university_admin (only if not already filtered by backend)
+        const scoped = (role === 'university_admin' && allowedUniversityId && !universityFilter)
           ? list.filter((inst: any) => Number(inst.university_id) === Number(allowedUniversityId))
           : list;
         console.log('Scoped institutes list:', scoped);
@@ -175,11 +210,36 @@ const InstituteManagement = () => {
         });
       } else {
         console.error('Failed to fetch institutes:', response.message);
+        setInstitutes([]);
       }
     } catch (error) {
       console.error('Error fetching institutes:', error);
+      setInstitutes([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUniversities = async () => {
+    try {
+      setLoadingUniversities(true);
+      console.log('Fetching universities...');
+      // Request a large per_page to get all universities
+      const response = await apiService.getUniversities({ per_page: 1000 });
+      
+      if (response.success) {
+        const list: any[] = response.data || [];
+        console.log('Universities list:', list);
+        setUniversitiesList(list);
+      } else {
+        console.error('Failed to fetch universities:', response.message);
+        setUniversitiesList([]);
+      }
+    } catch (error) {
+      console.error('Error fetching universities:', error);
+      setUniversitiesList([]);
+    } finally {
+      setLoadingUniversities(false);
     }
   };
 
@@ -724,6 +784,20 @@ const InstituteManagement = () => {
                     if (resp.success) {
                       alert('University created successfully');
                       setNewUniversity({ name: '', email: '', phone: '', website: '', address: '', description: '', established: '', accreditation: '' });
+                      // Refresh universities list if on universities tab
+                      if (activeTab === 'universities') {
+                        fetchUniversities();
+                      }
+                      // Also refresh the universities for filters
+                      const universitiesResp = await apiService.getUniversities({ per_page: 1000 });
+                      if (universitiesResp.success) {
+                        const universitiesList = universitiesResp.data || [];
+                        // Filter only active universities
+                        const activeUniversities = universitiesList.filter((u: any) => 
+                          !u.RecStatus || u.RecStatus === 'active'
+                        );
+                        setUniversities(activeUniversities);
+                      }
                     } else {
                       alert(resp.message || 'Failed to create university');
                     }
@@ -738,115 +812,263 @@ const InstituteManagement = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search institutes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="verified">Verified</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b">
+        <button
+          onClick={() => setActiveTab('institutes')}
+          className={`px-4 py-2 font-medium text-sm transition-colors ${
+            activeTab === 'institutes'
+              ? 'border-b-2 border-blue-500 text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Institutes ({institutes.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('universities')}
+          className={`px-4 py-2 font-medium text-sm transition-colors ${
+            activeTab === 'universities'
+              ? 'border-b-2 border-blue-500 text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Universities ({universitiesList.length})
+        </button>
       </div>
 
+      {/* Search and Filters - Only show for institutes */}
+      {activeTab === 'institutes' && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search institutes..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    // Reset pagination when search changes
+                    setPagination({ current_page: 1, last_page: 1, total: 0 });
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <Select 
+                value={statusFilter} 
+                onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setPagination({ current_page: 1, last_page: 1, total: 0 });
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              {(role === 'super_admin' || role === 'admin') && (
+                <Select 
+                  value={universityFilter} 
+                  onValueChange={(value) => {
+                    setUniversityFilter(value);
+                    setPagination({ current_page: 1, last_page: 1, total: 0 });
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Filter by university" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Universities</SelectItem>
+                    {universities.length > 0 ? (
+                      universities.map((university: any) => (
+                        <SelectItem key={university.id} value={university.id.toString()}>
+                          {university.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-universities" disabled>
+                        No universities available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Institutes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
-          <div className="col-span-full text-center py-8">
-            <div className="text-sm text-gray-500">Loading institutes...</div>
-          </div>
-        ) : institutes.length > 0 ? (
-          institutes.map((institute: any) => (
-            <Card key={institute.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{institute.name}</CardTitle>
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      {getTypeBadge(institute.type)}
+      {activeTab === 'institutes' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            <div className="col-span-full text-center py-8">
+              <div className="text-sm text-gray-500">Loading institutes...</div>
+            </div>
+          ) : institutes.length > 0 ? (
+            institutes.map((institute: any) => (
+              <Card key={institute.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">{institute.name}</CardTitle>
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        {getTypeBadge(institute.type)}
+                      </div>
+                      {institute.university && (
+                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                          <GraduationCap className="h-3 w-3" />
+                          {institute.university.name}
+                        </div>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleViewInstitute(institute)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditInstitute(institute)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteInstitute(institute.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4" />
+                      <span>{institute.email}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <Phone className="h-4 w-4" />
+                      <span>{institute.phone || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <MapPin className="h-4 w-4" />
+                      <span className="truncate">{institute.address || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">{institute.students?.toLocaleString() || 0} students</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        <span className="text-sm font-medium">{institute.rating || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      {getStatusBadge(institute.status)}
+                      <div className="text-xs text-gray-500">
+                        {institute.created_at ? new Date(institute.created_at).toLocaleDateString() : 'N/A'}
+                      </div>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleViewInstitute(institute)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEditInstitute(institute)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteInstitute(institute.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <Mail className="h-4 w-4" />
-                    <span>{institute.email}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <Phone className="h-4 w-4" />
-                    <span>{institute.phone || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    <span>{institute.address || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-1">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{institute.students?.toLocaleString() || 0} students</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                      <span className="text-sm font-medium">{institute.rating || 0}</span>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <div className="text-sm text-gray-500">No institutes found</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Universities Grid */}
+      {activeTab === 'universities' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loadingUniversities ? (
+            <div className="col-span-full text-center py-8">
+              <div className="text-sm text-gray-500">Loading universities...</div>
+            </div>
+          ) : universitiesList.length > 0 ? (
+            universitiesList.map((university: any) => (
+              <Card key={university.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">{university.name}</CardTitle>
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4" />
+                        <Badge className="bg-blue-100 text-blue-800">University</Badge>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    {getStatusBadge(institute.status)}
-                    <div className="text-xs text-gray-500">
-                      {institute.created_at ? new Date(institute.created_at).toLocaleDateString() : 'N/A'}
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4" />
+                      <span>{university.email}</span>
                     </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <Phone className="h-4 w-4" />
+                      <span>{university.phone || 'N/A'}</span>
+                    </div>
+                    {university.website && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Globe className="h-4 w-4" />
+                        <a href={university.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          {university.website}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <MapPin className="h-4 w-4" />
+                      <span className="truncate">{university.address || 'N/A'}</span>
+                    </div>
+                    {university.description && (
+                      <div className="text-sm text-gray-600 line-clamp-2">
+                        {university.description}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-gray-500">
+                        {university.established ? `Est. ${university.established}` : ''}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {university.created_at ? new Date(university.created_at).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </div>
+                    {university.accreditation && (
+                      <div className="text-xs text-gray-500">
+                        Accreditation: {university.accreditation}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8">
-            <div className="text-sm text-gray-500">No institutes found</div>
-          </div>
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <div className="text-sm text-gray-500">No universities found</div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* View Institute Dialog */}
       <Dialog open={isViewInstituteOpen} onOpenChange={setIsViewInstituteOpen}>

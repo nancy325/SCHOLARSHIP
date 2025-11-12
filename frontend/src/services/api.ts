@@ -217,12 +217,12 @@ class ApiService {
   }
 
   // Scholarship Management
-  async getScholarships(params?: { search?: string; type?: string; page?: number }): Promise<ApiResponse> {
+  async getScholarships(params?: { search?: string; type?: string; university_id?: number; institute_id?: number; page?: number; per_page?: number }): Promise<ApiResponse> {
     return this.get('/scholarships', params);
   }
 
   async getScholarship(id: number): Promise<ApiResponse> {
-    return this.request(`/scholarships?id=${id}`);
+    return this.get('/scholarships', { id });
   }
 
   async createScholarship(scholarshipData: any): Promise<ApiResponse> {
@@ -284,7 +284,7 @@ class ApiService {
   }
 
   // User Management
-  async getUsers(params?: { search?: string; status?: string; page?: number }): Promise<ApiResponse> {
+  async getUsers(params?: { search?: string; status?: string; rec_status?: string; page?: number; per_page?: number }): Promise<ApiResponse> {
     return this.get('/admin/users', params);
   }
 
@@ -328,7 +328,7 @@ class ApiService {
   }
 
   // Institutes Management
-  async getInstitutes(params?: { search?: string; status?: string; page?: number }): Promise<ApiResponse> {
+  async getInstitutes(params?: { search?: string; status?: string; university_id?: number; page?: number; per_page?: number }): Promise<ApiResponse> {
     return this.get('/institutes', params);
   }
 
@@ -360,13 +360,13 @@ class ApiService {
   }
 
   // Admin-specific scholarship endpoints
-  async getAdminScholarships(params?: { search?: string; type?: string; page?: number }): Promise<ApiResponse> {
+  async getAdminScholarships(params?: { search?: string; type?: string; university_id?: number; institute_id?: number; page?: number; per_page?: number }): Promise<ApiResponse> {
     return this.get('/scholarships', params);
   }
 
   // Universities Management
-  async getUniversities(): Promise<ApiResponse> {
-    return this.request('/universities');
+  async getUniversities(params?: { page?: number; per_page?: number }): Promise<ApiResponse> {
+    return this.get('/universities', params);
   }
 
   async createUniversity(universityData: any): Promise<ApiResponse> {

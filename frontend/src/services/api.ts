@@ -386,6 +386,11 @@ class ApiService {
   async deleteUniversity(id: number): Promise<ApiResponse> {
     return this.request(`/universities/${id}`, { method: 'DELETE' });
   }
+
+  // Student Dashboard
+  async getStudentDashboard(): Promise<ApiResponse> {
+    return this.request('/student/dashboard');
+  }
 }
 
 export const apiService = new ApiService();

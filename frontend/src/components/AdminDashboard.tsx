@@ -7,32 +7,26 @@ import {
   GraduationCap, 
   BarChart3, 
   Settings, 
-  LogOut,
-  Menu,
-  X,
   Home,
-  UserCheck,
   TrendingUp,
   Activity,
-  ChevronRight,
-  Plus
+  ChevronRight
 } from 'lucide-react';
 import { AdminHeader } from './AdminHeader';
 import { AdminFooter } from './AdminFooter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UserManagement from './admin/UserManagement';
 import InstituteManagement from './admin/InstituteManagement';
 import ScholarshipManagement from './admin/ScholarshipManagement';
 import Analytics from './admin/Analytics';
 import AdminApiTest from './AdminApiTest';
+import { AdminLayout } from './layout/AdminLayout';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboardStats, setDashboardStats] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -105,15 +99,6 @@ const AdminDashboard = () => {
       description: 'Available opportunities',
       color: 'bg-purple-100 text-purple-600'
     }
-    // {
-    //   title: 'Applications',
-    //   value: dashboardStats.total_applications?.toLocaleString() || '0',
-    //   change: '+18%',
-    //   changeType: 'positive',
-    //   icon: Activity,
-    //   description: 'This month',
-    //   color: 'bg-amber-100 text-amber-600'
-    // }
   ] : [];
 
   const navigation = [
@@ -178,20 +163,20 @@ const AdminDashboard = () => {
                       </div>
                     ) : recentActivity.length > 0 ? (
                       recentActivity.slice(0, 4).map((item, index) => (
-                      <div key={index} className="flex items-center justify-between py-2 group">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-2 h-2 rounded-full ${
-                            item.type === 'user' ? 'bg-blue-500' :
-                            item.type === 'institute' ? 'bg-green-500' :
-                            item.type === 'scholarship' ? 'bg-purple-500' : 'bg-amber-500'
-                          }`} />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{item.action}</p>
-                            <p className="text-xs text-gray-500">{item.time}</p>
+                        <div key={index} className="flex items-center justify-between py-2 group">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-2 h-2 rounded-full ${
+                              item.type === 'user' ? 'bg-blue-500' :
+                              item.type === 'institute' ? 'bg-green-500' :
+                              item.type === 'scholarship' ? 'bg-purple-500' : 'bg-amber-500'
+                            }`} />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">{item.action}</p>
+                              <p className="text-xs text-gray-500">{item.time}</p>
+                            </div>
                           </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
                         </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
-                      </div>
                       ))
                     ) : (
                       <div className="text-center py-4">
@@ -286,82 +271,16 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex flex-col">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 to-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex h-16 items-center justify-between px-6 border-b border-gray-700">
-          <h1 className="text-xl font-bold text-white">ScholarAdmin</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <nav className="mt-6 px-3">
-          <ul className="space-y-1">
-            {navigation.map((item) => (
-              <li key={item.name}>
-                <Button
-                  variant={activeTab === item.tab ? 'secondary' : 'ghost'}
-                  className={`w-full justify-start transition-all ${
-                    activeTab === item.tab 
-                      ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700' 
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  }`}
-                  onClick={() => setActiveTab(item.tab)}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <AdminFooter handleLogout={handleLogout} />
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader 
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-        />
-
-        {/* Main content area */}
-        <div className="flex-1 overflow-auto focus:outline-none lg:ml-64">
-          <div className="p-4 lg:p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {navigation.find(nav => nav.tab === activeTab)?.name || 'Dashboard'}
-              </h2>
-              <p className="text-gray-600 mt-1">
-                {activeTab === 'overview' 
-                  ? 'Welcome to your admin dashboard. Monitor and manage your scholarship portal.'
-                  : `Manage ${navigation.find(nav => nav.tab === activeTab)?.name.toLowerCase()}` 
-                }
-              </p>
-            </div>
-
-            {renderContent()}
-          </div>
-        </div>
-      </div>
-    </div>
+    <AdminLayout 
+      title={navigation.find(nav => nav.tab === activeTab)?.name || 'Dashboard'}
+      description={
+        activeTab === 'overview' 
+          ? 'Welcome to your admin dashboard. Monitor and manage your scholarship portal.'
+          : `Manage ${navigation.find(nav => nav.tab === activeTab)?.name.toLowerCase()}`
+      }
+    >
+      {renderContent()}
+    </AdminLayout>
   );
 };
 

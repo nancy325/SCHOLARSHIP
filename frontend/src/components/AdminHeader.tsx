@@ -1,45 +1,57 @@
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Bell, User, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface AdminHeaderProps {
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
+  sidebarOpen?: boolean;
+  setSidebarOpen?: (open: boolean) => void;
+  showSidebarToggle?: boolean;
 }
 
-export const AdminHeader = ({
-  sidebarOpen,
-  setSidebarOpen,
+export const AdminHeader = ({ 
+  sidebarOpen = false, 
+  setSidebarOpen = () => {},
+  showSidebarToggle = true 
 }: AdminHeaderProps) => {
   return (
-    <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 shadow-sm">
-      <div className="flex items-center justify-between">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+      {showSidebarToggle && (
         <Button
-          variant="ghost"
-          size="sm"
-          className="lg:hidden text-gray-600"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          variant="outline"
+          size="icon"
+          className="shrink-0 md:hidden"
+          onClick={() => setSidebarOpen?.(!sidebarOpen)}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <span className="sr-only">Toggle navigation menu</span>
         </Button>
-
-        <div className="flex items-center space-x-4">
-          <div className="hidden md:flex items-center space-x-2 bg-green-50 rounded-full py-1 px-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-green-700">System Online</span>
+      )}
+      
+      <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+        <form className="ml-auto flex-1 sm:flex-initial">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search..."
+              className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
+            />
           </div>
-          <Separator orientation="vertical" className="h-6 bg-gray-300" />
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-              AU
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">Admin User</p>
-              <p className="text-xs text-gray-500">Administrator</p>
-            </div>
-          </div>
-        </div>
+        </form>
+        
+        <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+          <Bell className="h-4 w-4" />
+          <span className="sr-only">Toggle notifications</span>
+        </Button>
+        
+        <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src="/avatars/01.png" alt="Admin" />
+            <AvatarFallback>AD</AvatarFallback>
+          </Avatar>
+        </Button>
       </div>
-    </div>
+    </header>
   );
 };

@@ -1,21 +1,23 @@
-import { LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Copyright } from 'lucide-react';
 
 interface AdminFooterProps {
-  handleLogout: () => void;
+  className?: string;
 }
 
-export const AdminFooter = ({ handleLogout }: AdminFooterProps) => {
+export const AdminFooter = ({ className = '' }: AdminFooterProps) => {
+  const currentYear = new Date().getFullYear();
+  
   return (
-    <div className="mt-auto w-full p-4 border-t border-gray-700 bg-gradient-to-b from-gray-900 to-gray-800">
-      <Button 
-        variant="ghost" 
-        className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700" 
-        onClick={handleLogout}
-      >
-        <LogOut className="mr-3 h-5 w-5" />
-        Logout
-      </Button>
-    </div>
+    <footer className={`border-t border-gray-200 bg-gradient-to-r from-white to-gray-50 py-4 px-6 ${className}`}>
+      <div className="container mx-auto flex flex-col items-center justify-between md:flex-row">
+        <div className="flex items-center text-sm text-gray-600">
+          <Copyright className="mr-1 h-4 w-4" />
+          <span>{currentYear} Scholarship. All rights reserved.</span>
+        </div>
+        <div className="mt-2 text-sm text-gray-500 md:mt-0">
+          Version 1.0.0
+        </div>
+      </div>
+    </footer>
   );
 };

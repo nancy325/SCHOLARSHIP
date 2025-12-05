@@ -12,8 +12,6 @@ import {
   Activity,
   ChevronRight
 } from 'lucide-react';
-import { AdminHeader } from './AdminHeader';
-import { AdminFooter } from './AdminFooter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,12 +60,15 @@ const AdminDashboard = () => {
   const handleLogout = async () => {
     try {
       await apiService.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
       navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still redirect even if logout API fails
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+    navigate('/');
     }
   };
 
@@ -271,6 +272,7 @@ const AdminDashboard = () => {
   };
 
   return (
+<<<<<<< HEAD
     <AdminLayout 
       title={navigation.find(nav => nav.tab === activeTab)?.name || 'Dashboard'}
       description={
@@ -281,6 +283,117 @@ const AdminDashboard = () => {
     >
       {renderContent()}
     </AdminLayout>
+=======
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 to-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex h-16 items-center justify-between px-6 border-b border-gray-700">
+          <h1 className="text-xl font-bold text-white">ScholarAdmin</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <nav className="mt-6 px-3">
+          <ul className="space-y-1">
+            {navigation.map((item) => (
+              <li key={item.name}>
+                <Button
+                  variant={activeTab === item.tab ? 'secondary' : 'ghost'}
+                  className={`w-full justify-start transition-all ${
+                    activeTab === item.tab 
+                      ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700' 
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                  }`}
+                  onClick={() => setActiveTab(item.tab)}
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700" 
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-3 h-5 w-5" />
+            Logout
+          </Button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="lg:pl-64">
+        {/* Top bar */}
+        <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden text-gray-600"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:flex items-center space-x-2 bg-green-50 rounded-full py-1 px-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-green-700">System Online</span>
+              </div>
+              <Separator orientation="vertical" className="h-6 bg-gray-300" />
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  AU
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900">Admin User</p>
+                  <p className="text-xs text-gray-500">Administrator</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Page content */}
+        <main className="p-4 lg:p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {navigation.find(nav => nav.tab === activeTab)?.name || 'Dashboard'}
+            </h2>
+            <p className="text-gray-600 mt-1">
+              {activeTab === 'overview' 
+                ? 'Welcome to your admin dashboard. Monitor and manage your scholarship portal.'
+                : `Manage ${navigation.find(nav => nav.tab === activeTab)?.name.toLowerCase()}`
+              }
+            </p>
+          </div>
+
+          {renderContent()}
+        </main>
+      </div>
+    </div>
+>>>>>>> parent of 2a66e77 (admin header and footer)
   );
 };
 

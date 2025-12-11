@@ -11,9 +11,7 @@ import {
   Mail,
   Phone,
   MapPin,
-  Globe,
   Users,
-  GraduationCap,
   CheckCircle,
   XCircle,
   Star
@@ -39,7 +37,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 
 const InstituteManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,25 +47,11 @@ const InstituteManagement = () => {
   const [isViewInstituteOpen, setIsViewInstituteOpen] = useState(false);
   const [selectedInstitute, setSelectedInstitute] = useState(null);
   const [institutes, setInstitutes] = useState([]);
-  const [universitiesList, setUniversitiesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingUniversities, setLoadingUniversities] = useState(true);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [universities, setUniversities] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'institutes' | 'universities'>('institutes');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [createNewUniversity, setCreateNewUniversity] = useState(false);
   const [selectedUniversityId, setSelectedUniversityId] = useState<string>('');
-  const [newUniversity, setNewUniversity] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    website: '',
-    address: '',
-    description: '',
-    established: '',
-    accreditation: ''
-  });
   const [newInstitute, setNewInstitute] = useState({
     name: '',
     type: 'university',
@@ -119,13 +102,6 @@ const InstituteManagement = () => {
   useEffect(() => {
     fetchInstitutes();
   }, [debouncedSearchTerm, statusFilter, universityFilter, allowedUniversityId]);
-
-  // Fetch universities from API
-  useEffect(() => {
-    if (activeTab === 'universities') {
-      fetchUniversities();
-    }
-  }, [activeTab]);
 
   // Determine allowed university for university_admin using scoped options endpoint
   useEffect(() => {
@@ -220,29 +196,6 @@ const InstituteManagement = () => {
     }
   };
 
-  const fetchUniversities = async () => {
-    try {
-      setLoadingUniversities(true);
-      console.log('Fetching universities...');
-      // Request a large per_page to get all universities
-      const response = await apiService.getUniversities({ per_page: 1000 });
-      
-      if (response.success) {
-        const list: any[] = response.data || [];
-        console.log('Universities list:', list);
-        setUniversitiesList(list);
-      } else {
-        console.error('Failed to fetch universities:', response.message);
-        setUniversitiesList([]);
-      }
-    } catch (error) {
-      console.error('Error fetching universities:', error);
-      setUniversitiesList([]);
-    } finally {
-      setLoadingUniversities(false);
-    }
-  };
-
   const handleAddInstitute = async () => {
     try {
       // Prepare data for API - convert numbers and handle empty strings
@@ -263,20 +216,8 @@ const InstituteManagement = () => {
         status: newInstitute.status
       };
 
-      // Attach university either by id or inline payload
-      if (createNewUniversity) {
-        const uniPayload = {
-          name: newUniversity.name.trim(),
-          email: newUniversity.email.trim(),
-          phone: newUniversity.phone.trim() || null,
-          website: newUniversity.website.trim() || null,
-          address: newUniversity.address.trim() || null,
-          description: newUniversity.description.trim() || null,
-          established: newUniversity.established.trim() || null,
-          accreditation: newUniversity.accreditation.trim() || null,
-        };
-        (instituteData as any).university = uniPayload;
-      } else if (selectedUniversityId) {
+      // Attach university by id if provided
+      if (selectedUniversityId) {
         (instituteData as any).university_id = parseInt(selectedUniversityId);
       }
 
@@ -299,18 +240,7 @@ const InstituteManagement = () => {
           contact_person: '',
           contact_phone: ''
         });
-        setCreateNewUniversity(false);
         setSelectedUniversityId('');
-        setNewUniversity({
-          name: '',
-          email: '',
-          phone: '',
-          website: '',
-          address: '',
-          description: '',
-          established: '',
-          accreditation: ''
-        });
         fetchInstitutes(); // Refresh the list
         alert('Institute created successfully!');
       } else {
@@ -478,74 +408,19 @@ const InstituteManagement = () => {
               <DialogDescription>Add a new educational institution to the platform</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {/* University link or creation */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                <div>
-                  <Label htmlFor="university-mode">Create new university?</Label>
-                  <div className="flex items-center gap-3 mt-2">
-                    <Switch id="university-mode" checked={createNewUniversity} onCheckedChange={setCreateNewUniversity} />
-                    <span className="text-sm text-gray-600">Toggle to enter new university details</span>
-                  </div>
-                </div>
-                {!createNewUniversity && (
-                  <div>
-                    <Label htmlFor="university-select">Attach to University</Label>
-                    <Select value={selectedUniversityId} onValueChange={setSelectedUniversityId}>
-                      <SelectTrigger id="university-select" className="w-full">
-                        <SelectValue placeholder="Select a university" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {universities.map((u: any) => (
-                          <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+              <div>
+                <Label htmlFor="university-select">Attach to University</Label>
+                <Select value={selectedUniversityId} onValueChange={setSelectedUniversityId}>
+                  <SelectTrigger id="university-select" className="w-full">
+                    <SelectValue placeholder="Select a university" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {universities.map((u: any) => (
+                      <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-
-              {createNewUniversity && (
-                <div className="grid gap-4 p-3 sm:p-4 border rounded-md">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="uni-name">University Name *</Label>
-                      <Input id="uni-name" value={newUniversity.name} onChange={(e) => setNewUniversity({ ...newUniversity, name: e.target.value })} placeholder="Enter university name" />
-                    </div>
-                    <div>
-                      <Label htmlFor="uni-email">University Email *</Label>
-                      <Input id="uni-email" type="email" value={newUniversity.email} onChange={(e) => setNewUniversity({ ...newUniversity, email: e.target.value })} placeholder="Enter university email" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="uni-phone">Phone</Label>
-                      <Input id="uni-phone" value={newUniversity.phone} onChange={(e) => setNewUniversity({ ...newUniversity, phone: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label htmlFor="uni-website">Website</Label>
-                      <Input id="uni-website" value={newUniversity.website} onChange={(e) => setNewUniversity({ ...newUniversity, website: e.target.value })} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="uni-address">Address</Label>
-                    <Textarea id="uni-address" rows={2} value={newUniversity.address} onChange={(e) => setNewUniversity({ ...newUniversity, address: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label htmlFor="uni-description">Description</Label>
-                    <Textarea id="uni-description" rows={3} value={newUniversity.description} onChange={(e) => setNewUniversity({ ...newUniversity, description: e.target.value })} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="uni-established">Established</Label>
-                      <Input id="uni-established" value={newUniversity.established} onChange={(e) => setNewUniversity({ ...newUniversity, established: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label htmlFor="uni-accreditation">Accreditation</Label>
-                      <Input id="uni-accreditation" value={newUniversity.accreditation} onChange={(e) => setNewUniversity({ ...newUniversity, accreditation: e.target.value })} />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -712,132 +587,10 @@ const InstituteManagement = () => {
             </div>
           </DialogContent>
           </Dialog>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New University
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New University</DialogTitle>
-                <DialogDescription>Add a university without creating an institute</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="nu-name">University Name *</Label>
-                    <Input id="nu-name" value={newUniversity.name} onChange={(e) => setNewUniversity({ ...newUniversity, name: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label htmlFor="nu-email">Email *</Label>
-                    <Input id="nu-email" type="email" value={newUniversity.email} onChange={(e) => setNewUniversity({ ...newUniversity, email: e.target.value })} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="nu-phone">Phone</Label>
-                    <Input id="nu-phone" value={newUniversity.phone} onChange={(e) => setNewUniversity({ ...newUniversity, phone: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label htmlFor="nu-website">Website</Label>
-                    <Input id="nu-website" value={newUniversity.website} onChange={(e) => setNewUniversity({ ...newUniversity, website: e.target.value })} />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="nu-address">Address</Label>
-                  <Textarea id="nu-address" rows={2} value={newUniversity.address} onChange={(e) => setNewUniversity({ ...newUniversity, address: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="nu-description">Description</Label>
-                  <Textarea id="nu-description" rows={3} value={newUniversity.description} onChange={(e) => setNewUniversity({ ...newUniversity, description: e.target.value })} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="nu-established">Established</Label>
-                    <Input id="nu-established" value={newUniversity.established} onChange={(e) => setNewUniversity({ ...newUniversity, established: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label htmlFor="nu-accreditation">Accreditation</Label>
-                    <Input id="nu-accreditation" value={newUniversity.accreditation} onChange={(e) => setNewUniversity({ ...newUniversity, accreditation: e.target.value })} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => {
-                  setNewUniversity({ name: '', email: '', phone: '', website: '', address: '', description: '', established: '', accreditation: '' });
-                }}>Cancel</Button>
-                <Button onClick={async () => {
-                  try {
-                    const payload = {
-                      name: newUniversity.name.trim(),
-                      email: newUniversity.email.trim(),
-                      phone: newUniversity.phone.trim() || null,
-                      website: newUniversity.website.trim() || null,
-                      address: newUniversity.address.trim() || null,
-                      description: newUniversity.description.trim() || null,
-                      established: newUniversity.established.trim() || null,
-                      accreditation: newUniversity.accreditation.trim() || null,
-                    };
-                    const resp = await apiService.createUniversity(payload);
-                    if (resp.success) {
-                      alert('University created successfully');
-                      setNewUniversity({ name: '', email: '', phone: '', website: '', address: '', description: '', established: '', accreditation: '' });
-                      // Refresh universities list if on universities tab
-                      if (activeTab === 'universities') {
-                        fetchUniversities();
-                      }
-                      // Also refresh the universities for filters
-                      const universitiesResp = await apiService.getUniversities({ per_page: 1000 });
-                      if (universitiesResp.success) {
-                        const universitiesList = universitiesResp.data || [];
-                        // Filter only active universities
-                        const activeUniversities = universitiesList.filter((u: any) => 
-                          !u.RecStatus || u.RecStatus === 'active'
-                        );
-                        setUniversities(activeUniversities);
-                      }
-                    } else {
-                      alert(resp.message || 'Failed to create university');
-                    }
-                  } catch (e) {
-                    console.error(e);
-                    alert('Failed to create university');
-                  }
-                }}>Create University</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b">
-        <button
-          onClick={() => setActiveTab('institutes')}
-          className={`px-4 py-2 font-medium text-sm transition-colors ${
-            activeTab === 'institutes'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Institutes ({institutes.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('universities')}
-          className={`px-4 py-2 font-medium text-sm transition-colors ${
-            activeTab === 'universities'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Universities ({universitiesList.length})
-        </button>
-      </div>
-
-      {/* Search and Filters - Only show for institutes */}
-      {activeTab === 'institutes' && (
+      {/* Search and Filters */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -902,10 +655,8 @@ const InstituteManagement = () => {
             </div>
           </CardContent>
         </Card>
-      )}
 
       {/* Institutes Grid */}
-      {activeTab === 'institutes' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
             <div className="col-span-full text-center py-8">
@@ -924,15 +675,14 @@ const InstituteManagement = () => {
                       </div>
                       {institute.university && (
                         <div className="text-xs text-gray-400 flex items-center gap-1">
-                          <GraduationCap className="h-3 w-3" />
-                          {institute.university.name}
+                          <span className="font-medium">{institute.university.name}</span>
                         </div>
                       )}
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal className="h-4 w-4" aria-label="More options for this institute" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -995,80 +745,6 @@ const InstituteManagement = () => {
             </div>
           )}
         </div>
-      )}
-
-      {/* Universities Grid */}
-      {activeTab === 'universities' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loadingUniversities ? (
-            <div className="col-span-full text-center py-8">
-              <div className="text-sm text-gray-500">Loading universities...</div>
-            </div>
-          ) : universitiesList.length > 0 ? (
-            universitiesList.map((university: any) => (
-              <Card key={university.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{university.name}</CardTitle>
-                      <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <GraduationCap className="h-4 w-4" />
-                        <Badge className="bg-blue-100 text-blue-800">University</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <Mail className="h-4 w-4" />
-                      <span>{university.email}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{university.phone || 'N/A'}</span>
-                    </div>
-                    {university.website && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Globe className="h-4 w-4" />
-                        <a href={university.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {university.website}
-                        </a>
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4" />
-                      <span className="truncate">{university.address || 'N/A'}</span>
-                    </div>
-                    {university.description && (
-                      <div className="text-sm text-gray-600 line-clamp-2">
-                        {university.description}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-gray-500">
-                        {university.established ? `Est. ${university.established}` : ''}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {university.created_at ? new Date(university.created_at).toLocaleDateString() : 'N/A'}
-                      </div>
-                    </div>
-                    {university.accreditation && (
-                      <div className="text-xs text-gray-500">
-                        Accreditation: {university.accreditation}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-8">
-              <div className="text-sm text-gray-500">No universities found</div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* View Institute Dialog */}
       <Dialog open={isViewInstituteOpen} onOpenChange={setIsViewInstituteOpen}>

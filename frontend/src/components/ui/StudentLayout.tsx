@@ -1,7 +1,8 @@
 // src/components/ui/StudentLayout.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import StudentHeader from "./StudentHeader";
+import Header from "../Header";
+import Footer from "../Footer";
 import StudentSidebar from "./StudentSidebar";
 
 type StudentLayoutProps = {
@@ -45,14 +46,15 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children, navItems }) => 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 flex flex-col">
       {/* Header Component */}
-      <StudentHeader 
+      <Header 
+        variant="student"
         sidebarOpen={sidebarOpen} 
         onSidebarToggle={handleSidebarToggle} 
       />
 
-      <div className="flex">
+      <div className="flex flex-1">
         {/* Sidebar Component */}
         <StudentSidebar
           sidebarOpen={sidebarOpen}
@@ -67,6 +69,9 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children, navItems }) => 
           {children}
         </main>
       </div>
+
+      {/* Footer Component */}
+      <Footer />
     </div>
   );
 };

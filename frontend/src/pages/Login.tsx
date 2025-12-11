@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import heroImage from "@/assets/scholarship-hero.jpg";
 import { apiService } from '@/services/api';
 
@@ -98,6 +98,13 @@ const Login = () => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
+      <Link
+        to="/"
+        className="absolute top-6 left-6 z-20 inline-flex items-center gap-3 rounded-full bg-white/90 px-3 py-1.5 shadow-sm ring-1 ring-slate-200 hover:bg-white"
+      >
+        <img src="/favicon.png" alt="ScholarSnap" className="w-8 h-8 rounded-md" />
+        <span className="text-sm font-semibold text-slate-800">Back to Home</span>
+      </Link>
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroImage})` }}
@@ -151,7 +158,7 @@ const Login = () => {
           </button>
           <p className="text-sm text-center text-gray-500 mt-4">
             Don't have an account?{" "}
-            <a href="/signup" className="text-indigo-600 hover:underline">Sign up</a>
+            <Link to="/signup" className="text-indigo-600 hover:underline">Sign up</Link>
           </p>
         </form>
       </div>

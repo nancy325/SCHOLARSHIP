@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Calendar, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import heroImage from "@/assets/scholarship-hero.jpg";
+import { Calendar, ArrowRight, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
 import { useState } from "react";
+
+// Import hero image - use same pattern as other files
+import heroImage from "@/assets/scholarship-hero.jpg";
 
 const HomePage = () => {
   // Featured scholarships slider state
@@ -37,8 +39,21 @@ const HomePage = () => {
     },
   ];
 
-  const nextFeatured = () => setCurrentFeatured((prev) => (prev === featuredItems.length - 1 ? 0 : prev + 1));
-  const prevFeatured = () => setCurrentFeatured((prev) => (prev === 0 ? featuredItems.length - 1 : prev - 1));
+  const nextFeatured = () => {
+    if (featuredItems.length === 0) return;
+    setCurrentFeatured((prev) => (prev === featuredItems.length - 1 ? 0 : prev + 1));
+  };
+  
+  const prevFeatured = () => {
+    if (featuredItems.length === 0) return;
+    setCurrentFeatured((prev) => (prev === 0 ? featuredItems.length - 1 : prev - 1));
+  };
+
+  // Ensure currentFeatured is within bounds
+  const safeCurrentFeatured = featuredItems.length > 0 
+    ? Math.min(currentFeatured, featuredItems.length - 1) 
+    : 0;
+  const currentItem = featuredItems[safeCurrentFeatured] || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,7 +61,7 @@ const HomePage = () => {
       <section className="relative overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroImage})` }}
+          style={{ backgroundImage: heroImage ? `url(${heroImage})` : 'none' }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-900"></div>
         </div>
@@ -104,38 +119,46 @@ const HomePage = () => {
               </button>
 
               {/* Scholarship Card */}
-              <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-bold text-foreground mb-2">
-                  {featuredItems[currentFeatured].title}
-                </h3>
-                <div className="flex items-center text-muted-foreground mb-4">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span>Deadline: {featuredItems[currentFeatured].deadline}</span>
+              {currentItem ? (
+                <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                  <h3 className="text-xl font-bold text-foreground mb-2">
+                    {currentItem.title}
+                  </h3>
+                  <div className="flex items-center text-muted-foreground mb-4">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <span>Deadline: {currentItem.deadline}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className={`text-xs px-2 py-1 rounded-full ${currentItem.tagColor || 'bg-gray-100 text-gray-800'}`}>
+                      {currentItem.tag}
+                    </span>
+                    <a href="#" className="text-primary font-medium hover:underline flex items-center">
+                      View Details <ArrowRight className="w-4 h-4 ml-1" />
+                    </a>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className={`text-xs px-2 py-1 rounded-full ${featuredItems[currentFeatured].tagColor}`}>
-                    {featuredItems[currentFeatured].tag}
-                  </span>
-                  <a href="#" className="text-primary font-medium hover:underline flex items-center">
-                    View Details <ArrowRight className="w-4 h-4 ml-1" />
-                  </a>
+              ) : (
+                <div className="bg-white p-6 rounded-lg shadow-md text-center">
+                  <p className="text-muted-foreground">No featured scholarships available</p>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Indicator Dots */}
-            <div className="flex justify-center mt-6 space-x-2">
-              {featuredItems.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentFeatured(index)}
-                  className={`w-3 h-3 rounded-full transition-all ${
-                    index === currentFeatured ? 'bg-primary' : 'bg-muted-foreground/30'
-                  }`}
-                  aria-label={`Go to scholarship ${index + 1}`}
-                />
-              ))}
-            </div>
+            {featuredItems.length > 0 && (
+              <div className="flex justify-center mt-6 space-x-2">
+                {featuredItems.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentFeatured(index)}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      index === safeCurrentFeatured ? 'bg-primary' : 'bg-muted-foreground/30'
+                    }`}
+                    aria-label={`Go to scholarship ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
           
           <div className="text-center mt-10">
@@ -165,26 +188,6 @@ const HomePage = () => {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-10 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-lg font-semibold text-foreground">ScholarSnap</span>
-            </div>
-            <div className="text-sm text-muted-foreground">© {new Date().getFullYear()} ScholarSnap. All rights reserved.</div>
-            <div className="flex gap-4 text-sm">
-              <a className="text-muted-foreground hover:text-foreground" href="#">Privacy</a>
-              <a className="text-muted-foreground hover:text-foreground" href="#">Terms</a>
-              <a className="text-muted-foreground hover:text-foreground" href="#">Support</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

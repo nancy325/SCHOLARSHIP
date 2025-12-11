@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const ContactUsPage = () => {
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
@@ -23,8 +25,9 @@ const ContactUsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <section className="py-16 bg-muted/30">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header variant="landing" />
+      <section className="py-16 bg-muted/30 flex-1">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-3">Contact Us</h1>
@@ -68,10 +71,10 @@ const ContactUsPage = () => {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 };
 
 export default ContactUsPage;
-
 

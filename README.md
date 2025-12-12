@@ -83,6 +83,7 @@ DB_PASSWORD=your_password
 ```bash
 php artisan migrate
 ```
+## 191 schema
 
 ### 5. Seed Database (Optional)
 ```bash

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '@/services/api';
 import { 
   Search, 
@@ -39,9 +40,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const UserManagement = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [isViewUserOpen, setIsViewUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -138,7 +139,6 @@ const UserManagement = () => {
       setCreating(true);
       const response = await apiService.createUser(newUser);
       if (response.success) {
-        setIsAddUserOpen(false);
         setNewUser({
           name: '',
           email: '',
@@ -319,153 +319,10 @@ const UserManagement = () => {
           <h3 className="text-lg font-semibold">User Management</h3>
           <p className="text-sm text-gray-600">Manage all registered users and their accounts</p>
         </div>
-        <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add New User
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogDescription>Create a new user account with appropriate permissions.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Enter full name" 
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="Enter email address" 
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="Enter password" 
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={newUser.category} 
-                    onValueChange={(value) => setNewUser({...newUser, category: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high-school">High School</SelectItem>
-                      <SelectItem value="diploma">Diploma</SelectItem>
-                      <SelectItem value="undergraduate">Undergraduate</SelectItem>
-                      <SelectItem value="postgraduate">Postgraduate</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="institute">Institute</Label>
-                  <Select 
-                    value={newUser.institute_id?.toString() || 'none'} 
-                    onValueChange={(value) => setNewUser({...newUser, institute_id: value === 'none' ? null : parseInt(value)})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select institute" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Institute</SelectItem>
-                      {institutes.map((institute: any) => (
-                        <SelectItem key={institute.id} value={institute.id.toString()}>
-                          {institute.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="university">University</Label>
-                  <Select 
-                    value={newUser.university_id?.toString() || 'none'} 
-                    onValueChange={(value) => setNewUser({...newUser, university_id: value === 'none' ? null : parseInt(value)})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select university" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No University</SelectItem>
-                      {(universities as any[]).map((u: any) => (
-                        <SelectItem key={u.id} value={u.id.toString()}>
-                          {u.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                  <Select 
-                    value={newUser.role}
-                    onValueChange={(value) => setNewUser({...newUser, role: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="institute_admin">Institute Admin</SelectItem>
-                      <SelectItem value="university_admin">University Admin</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="recStatus">RecStatus</Label>
-                  <Select 
-                    value={newUser.RecStatus || 'active'}
-                    onValueChange={(value) => setNewUser({...newUser, RecStatus: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateUser} disabled={creating}>
-                {creating ? 'Creating...' : 'Create User'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => navigate('/admin-dashboard/users/create')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add New User
+        </Button>
       </div>
 
       {/* Filters and Search */}

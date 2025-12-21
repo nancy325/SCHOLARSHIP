@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '@/services/api';
 import { Plus, Mail, Phone, Globe, MapPin, GraduationCap, MoreHorizontal, Eye, Edit, Trash2, Search } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,12 +13,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const UniversityManagement = () => {
+  const navigate = useNavigate();
   const [universities, setUniversities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,45 +67,6 @@ const UniversityManagement = () => {
       (accreditationFilter === 'accredited' ? !!u.accreditation : !u.accreditation);
     return matchesTerm && matchesAcc;
   });
-
-  const handleCreate = async () => {
-    try {
-      setCreating(true);
-      const payload = {
-        name: newUniversity.name.trim(),
-        email: newUniversity.email.trim(),
-        phone: newUniversity.phone.trim() || null,
-        website: newUniversity.website.trim() || null,
-        address: newUniversity.address.trim() || null,
-        description: newUniversity.description.trim() || null,
-        established: newUniversity.established.trim() || null,
-        accreditation: newUniversity.accreditation.trim() || null,
-      };
-      const resp = await apiService.createUniversity(payload);
-      if (resp.success) {
-        setIsCreateOpen(false);
-        setNewUniversity({
-          name: '',
-          email: '',
-          phone: '',
-          website: '',
-          address: '',
-          description: '',
-          established: '',
-          accreditation: '',
-        });
-        fetchUniversities();
-        alert('University created successfully');
-      } else {
-        alert(resp.message || 'Failed to create university');
-      }
-    } catch (e) {
-      console.error(e);
-      alert('Failed to create university');
-    } finally {
-      setCreating(false);
-    }
-  };
 
   const handleOpenEdit = (uni: any) => {
     setSelectedUniversity(uni);
@@ -189,68 +150,10 @@ const UniversityManagement = () => {
           <h3 className="text-lg font-semibold">University Management</h3>
           <p className="text-sm text-gray-600">Manage partner universities and their profiles</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create University
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New University</DialogTitle>
-              <DialogDescription>Add a university to the platform</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="nu-name">University Name *</Label>
-                  <Input id="nu-name" value={newUniversity.name} onChange={(e) => setNewUniversity({ ...newUniversity, name: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="nu-email">Email *</Label>
-                  <Input id="nu-email" type="email" value={newUniversity.email} onChange={(e) => setNewUniversity({ ...newUniversity, email: e.target.value })} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="nu-phone">Phone</Label>
-                  <Input id="nu-phone" value={newUniversity.phone} onChange={(e) => setNewUniversity({ ...newUniversity, phone: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="nu-website">Website</Label>
-                  <Input id="nu-website" value={newUniversity.website} onChange={(e) => setNewUniversity({ ...newUniversity, website: e.target.value })} />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="nu-address">Address</Label>
-                <Textarea id="nu-address" rows={2} value={newUniversity.address} onChange={(e) => setNewUniversity({ ...newUniversity, address: e.target.value })} />
-              </div>
-              <div>
-                <Label htmlFor="nu-description">Description</Label>
-                <Textarea id="nu-description" rows={3} value={newUniversity.description} onChange={(e) => setNewUniversity({ ...newUniversity, description: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="nu-established">Established</Label>
-                  <Input id="nu-established" value={newUniversity.established} onChange={(e) => setNewUniversity({ ...newUniversity, established: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="nu-accreditation">Accreditation</Label>
-                  <Input id="nu-accreditation" value={newUniversity.accreditation} onChange={(e) => setNewUniversity({ ...newUniversity, accreditation: e.target.value })} />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate} disabled={creating}>
-                {creating ? 'Creating...' : 'Create University'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => navigate('/admin-dashboard/universities/create')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create University
+        </Button>
       </div>
 
       <Card>

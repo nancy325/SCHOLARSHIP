@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Plus, 
@@ -43,11 +44,11 @@ import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/api';
 
 const ScholarshipManagement = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [universityFilter, setUniversityFilter] = useState('all');
   const [instituteFilter, setInstituteFilter] = useState('all');
-  const [isAddScholarshipOpen, setIsAddScholarshipOpen] = useState(false);
   const [isEditScholarshipOpen, setIsEditScholarshipOpen] = useState(false);
   const [isViewScholarshipOpen, setIsViewScholarshipOpen] = useState(false);
   const [selectedScholarship, setSelectedScholarship] = useState(null);
@@ -100,29 +101,6 @@ const ScholarshipManagement = () => {
     fetchScholarships(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
-
-  // Default form values when opening create dialog based on role
-  useEffect(() => {
-    if (isAddScholarshipOpen) {
-      if (role === 'university_admin') {
-        setFormData(prev => ({
-          ...prev,
-          type: 'university',
-          university_id: prev.university_id || (universities.length === 1 ? String(universities[0].id) : ''),
-          institute_id: ''
-        }));
-      } else if (role === 'institute_admin') {
-        const defaultUniversityId = prevUniversityIdForInstitute();
-        setFormData(prev => ({
-          ...prev,
-          type: 'institute',
-          university_id: prev.university_id || (defaultUniversityId ? String(defaultUniversityId) : ''),
-          institute_id: prev.institute_id || ''
-        }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAddScholarshipOpen]);
 
   const prevUniversityIdForInstitute = () => {
     if (formData.university_id) return Number(formData.university_id);
@@ -311,7 +289,6 @@ const ScholarshipManagement = () => {
           title: "Success",
           description: "Scholarship created successfully",
         });
-        setIsAddScholarshipOpen(false);
         resetForm();
         // Always fetch first page after add
         setCurrentPage(1);
@@ -483,170 +460,10 @@ const ScholarshipManagement = () => {
           <h3 className="text-lg font-semibold">Scholarship Management</h3>
           <p className="text-sm text-gray-600">Manage scholarships, applications, and funding opportunities</p>
         </div>
-        <Dialog open={isAddScholarshipOpen} onOpenChange={setIsAddScholarshipOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Scholarship
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Create New Scholarship</DialogTitle>
-              <DialogDescription>Add a new scholarship opportunity to the platform</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="title">Scholarship Title</Label>
-                  <Input 
-                    id="title" 
-                    placeholder="Enter scholarship title" 
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="type">Type</Label>
-                  <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {role !== 'university_admin' && role !== 'institute_admin' && (
-                        <>
-                          <SelectItem value="government">Government</SelectItem>
-                          <SelectItem value="private">Private</SelectItem>
-                        </>
-                      )}
-                      <SelectItem value="university">University</SelectItem>
-                      <SelectItem value="institute">Institute</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {formData.type === 'university' && (
-                <div>
-                    <Label htmlFor="university">University</Label>
-                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)} disabled={universities.length === 1}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select university" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {universities.map((inst: any) => (
-                          <SelectItem key={inst.id} value={inst.id.toString()}>
-                            {inst.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                )}
-                {formData.type === 'institute' && (
-                <div>
-                    <Label htmlFor="university">University</Label>
-                    <Select value={formData.university_id} onValueChange={(value) => handleInputChange('university_id', value)} disabled={universities.length === 1}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select university" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {universities.map((inst: any) => (
-                          <SelectItem key={inst.id} value={inst.id.toString()}>
-                            {inst.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="mt-4">
-                      <Label htmlFor="institute">Institute</Label>
-                      <Select value={formData.institute_id} onValueChange={(value) => handleInputChange('institute_id', value)} disabled={!formData.university_id}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={!formData.university_id ? 'Select university first' : 'Select institute'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {institutesOnly.filter((inst: any) => inst.university_id === Number(formData.university_id)).map((inst: any) => (
-                            <SelectItem key={inst.id} value={inst.id.toString()}>
-                              {inst.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                  </Select>
-                </div>
-                </div>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="start-date">Start Date</Label>
-                  <Input 
-                    id="start-date" 
-                    type="date" 
-                    value={(formData as any).start_date || ''}
-                    onChange={(e) => handleInputChange('start_date' as any, e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="deadline">Application Deadline</Label>
-                  <Input 
-                    id="deadline" 
-                    type="date" 
-                    value={formData.deadline}
-                    onChange={(e) => handleInputChange('deadline', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="apply-link">Apply Link</Label>
-                  <Input 
-                    id="apply-link" 
-                    placeholder="https://..." 
-                    value={formData.apply_link}
-                    onChange={(e) => handleInputChange('apply_link', e.target.value)}
-                  />
-                </div>
-                </div>
-              
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Enter scholarship description" 
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="eligibility">Eligibility Criteria</Label>
-                <Textarea 
-                  id="eligibility" 
-                  placeholder="Enter eligibility criteria" 
-                  rows={2}
-                  value={formData.eligibility}
-                  onChange={(e) => handleInputChange('eligibility', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => {
-                setIsAddScholarshipOpen(false);
-                resetForm();
-              }}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateScholarship} disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Scholarship'
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => navigate('/admin-dashboard/scholarships/create')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create New Scholarship
+        </Button>
       </div>
 
       {/* Filters and Search */}

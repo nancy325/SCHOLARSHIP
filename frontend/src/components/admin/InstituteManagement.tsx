@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '@/services/api';
 import { 
   Search, 
@@ -39,10 +40,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const InstituteManagement = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [universityFilter, setUniversityFilter] = useState('all');
-  const [isAddInstituteOpen, setIsAddInstituteOpen] = useState(false);
   const [isEditInstituteOpen, setIsEditInstituteOpen] = useState(false);
   const [isViewInstituteOpen, setIsViewInstituteOpen] = useState(false);
   const [selectedInstitute, setSelectedInstitute] = useState(null);
@@ -223,7 +224,6 @@ const InstituteManagement = () => {
 
       const response = await apiService.createInstitute(instituteData);
       if (response.success) {
-        setIsAddInstituteOpen(false);
         setNewInstitute({
           name: '',
           type: 'university',
@@ -395,198 +395,10 @@ const InstituteManagement = () => {
           <p className="text-sm text-gray-600">Manage registered educational institutions and their profiles</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={isAddInstituteOpen} onOpenChange={setIsAddInstituteOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Register New Institute
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-4xl w-full max-h-[85vh] sm:max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Register New Institute</DialogTitle>
-              <DialogDescription>Add a new educational institution to the platform</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div>
-                <Label htmlFor="university-select">Attach to University</Label>
-                <Select value={selectedUniversityId} onValueChange={setSelectedUniversityId}>
-                  <SelectTrigger id="university-select" className="w-full">
-                    <SelectValue placeholder="Select a university" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {universities.map((u: any) => (
-                      <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Institute Name *</Label>
-                  <Input 
-                    id="name" 
-                    value={newInstitute.name}
-                    onChange={(e) => setNewInstitute({...newInstitute, name: e.target.value})}
-                    placeholder="Enter institute name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="type">Type *</Label>
-                  <Select value={newInstitute.type} onValueChange={(value) => setNewInstitute({...newInstitute, type: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="university">University</SelectItem>
-                      <SelectItem value="community_college">Community College</SelectItem>
-                      <SelectItem value="technical_institute">Technical Institute</SelectItem>
-                      <SelectItem value="liberal_arts">Liberal Arts</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input 
-                    id="email" 
-                    type="email"
-                    value={newInstitute.email}
-                    onChange={(e) => setNewInstitute({...newInstitute, email: e.target.value})}
-                    placeholder="Enter email address"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input 
-                    id="phone" 
-                    value={newInstitute.phone}
-                    onChange={(e) => setNewInstitute({...newInstitute, phone: e.target.value})}
-                    placeholder="Enter phone number"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="website">Website</Label>
-                  <Input 
-                    id="website" 
-                    value={newInstitute.website}
-                    onChange={(e) => setNewInstitute({...newInstitute, website: e.target.value})}
-                    placeholder="Enter website URL"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="established">Established</Label>
-                  <Input 
-                    id="established" 
-                    value={newInstitute.established}
-                    onChange={(e) => setNewInstitute({...newInstitute, established: e.target.value})}
-                    placeholder="Enter establishment year"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Textarea 
-                  id="address" 
-                  value={newInstitute.address}
-                  onChange={(e) => setNewInstitute({...newInstitute, address: e.target.value})}
-                  placeholder="Enter full address"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  value={newInstitute.description}
-                  onChange={(e) => setNewInstitute({...newInstitute, description: e.target.value})}
-                  placeholder="Enter institute description"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="accreditation">Accreditation</Label>
-                  <Input 
-                    id="accreditation" 
-                    value={newInstitute.accreditation}
-                    onChange={(e) => setNewInstitute({...newInstitute, accreditation: e.target.value})}
-                    placeholder="Enter accreditation info"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="students">Number of Students</Label>
-                  <Input 
-                    id="students" 
-                    type="number"
-                    value={newInstitute.students}
-                    onChange={(e) => setNewInstitute({...newInstitute, students: parseInt(e.target.value) || 0})}
-                    placeholder="Enter number of students"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="rating">Rating</Label>
-                  <Input 
-                    id="rating" 
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    value={newInstitute.rating}
-                    onChange={(e) => setNewInstitute({...newInstitute, rating: parseFloat(e.target.value) || 0})}
-                    placeholder="Enter rating (0-5)"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={newInstitute.status} onValueChange={(value) => setNewInstitute({...newInstitute, status: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="verified">Verified</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="contact-person">Contact Person</Label>
-                  <Input 
-                    id="contact-person" 
-                    value={newInstitute.contact_person}
-                    onChange={(e) => setNewInstitute({...newInstitute, contact_person: e.target.value})}
-                    placeholder="Enter contact person name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contact-phone">Contact Phone</Label>
-                  <Input 
-                    id="contact-phone" 
-                    value={newInstitute.contact_phone}
-                    onChange={(e) => setNewInstitute({...newInstitute, contact_phone: e.target.value})}
-                    placeholder="Enter contact phone number"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddInstituteOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddInstitute}>Create Institute</Button>
-            </div>
-          </DialogContent>
-          </Dialog>
+          <Button onClick={() => navigate('/admin-dashboard/institutes/create')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Register New Institute
+          </Button>
         </div>
       </div>
 

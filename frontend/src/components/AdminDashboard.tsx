@@ -26,6 +26,10 @@ import Analytics from './admin/Analytics';
 // Removed: import AdminApiTest from './AdminApiTest';
 import { AdminLayout } from './layout/AdminLayout';
 import UniversityManagement from './admin/UniversityManagement';
+import CreateUniversity from '@/pages/CreateUniversity';
+import CreateScholarship from '@/pages/CreateScholarship';
+import CreateUser from '@/pages/CreateUser';
+import CreateInstitute from '@/pages/CreateInstitute';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -171,18 +175,19 @@ const AdminDashboard = () => {
           } 
         />
         <Route path="users" element={<UserManagement />} />
-        <Route path="users/create" element={<EntityForm entity="User" mode="create" />} />
+        <Route path="users/create" element={<CreateUser />} />
         <Route path="users/:id/edit" element={<EntityForm entity="User" mode="edit" />} />
 
         <Route path="institutes" element={<InstituteManagement />} />
-        <Route path="institutes/create" element={<EntityForm entity="Institute" mode="create" />} />
+        <Route path="institutes/create" element={<CreateInstitute />} />
         <Route path="institutes/:id/edit" element={<EntityForm entity="Institute" mode="edit" />} />
 
         <Route path="scholarships" element={<ScholarshipManagement />} />
-        <Route path="scholarships/create" element={<EntityForm entity="Scholarship" mode="create" />} />
+        <Route path="scholarships/create" element={<CreateScholarship />} />
         <Route path="scholarships/:id/edit" element={<EntityForm entity="Scholarship" mode="edit" />} />
 
         <Route path="universities" element={<UniversityManagement />} />
+        <Route path="universities/create" element={<CreateUniversity />} />
         <Route path="analytics" element={<Analytics />} />
         {/* Removed: <Route path="api-test" element={<AdminApiTest />} /> */}
         <Route path="settings" element={<SettingsCard />} />

@@ -63,7 +63,7 @@ const Signup = () => {
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = 'Password must be at least 8 characters. Consider using a mix of letters, numbers, and special characters for a stronger password.';
     }
 
     if (!formData.password_confirmation) {
@@ -110,12 +110,58 @@ const Signup = () => {
       }
     } catch (error: any) {
       console.error('Registration error:', error);
-      
-      if (error.message && error.message.includes('Validation failed')) {
-        // Handle validation errors from server
-        setErrors({ general: 'Please check your input and try again.' });
-      } else if (error.message && error.message.includes('email')) {
-        setErrors({ email: 'This email is already registered.' });
+
+      // Try to extract exact error message from API
+      let errorMsg: string | undefined = undefined;
+      let fieldErrors: FormErrors = {};
+
+      // Handle different error response structures
+      if (error?.response?.data) {
+        // Laravel validation errors are usually in error.response.data.errors
+        if (error.response.data.errors && typeof error.response.data.errors === 'object') {
+          const apiErrors = error.response.data.errors;
+          Object.entries(apiErrors).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              // Show only the first error message for each field
+              if (
+                field === 'name' ||
+                field === 'email' ||
+                field === 'password' ||
+                field === 'password_confirmation' ||
+                field === 'category'
+              ) {
+                fieldErrors[field] = messages[0];
+              }
+              // Fallback: put any non-form error in general
+              if (
+                field !== 'name' &&
+                field !== 'email' &&
+                field !== 'password' &&
+                field !== 'password_confirmation' &&
+                field !== 'category'
+              ) {
+                // Concatenate into the general error
+                if (!fieldErrors.general) fieldErrors.general = '';
+                fieldErrors.general += messages[0] + ' ';
+              }
+            }
+          });
+        }
+        // Some APIs may put the main error in .message or .error
+        if (error.response.data.message) {
+          errorMsg = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMsg = error.response.data.error;
+        }
+      }
+
+      // If there are field errors set, use them
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+      } else if (errorMsg) {
+        setErrors({ general: errorMsg });
+      } else if (error.message) {
+        setErrors({ general: error.message });
       } else {
         setErrors({ general: 'Registration failed. Please try again.' });
       }

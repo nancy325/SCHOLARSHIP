@@ -27,7 +27,9 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Close profile menu on outside click (for student variant)
   useEffect(() => {
@@ -43,6 +45,21 @@ const Header: React.FC<HeaderProps> = ({
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [profileMenuOpen, variant]);
+
+  // Close mobile menu on outside click
+  useEffect(() => {
+    if (variant !== "landing") return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen, variant]);
 
   const handleLogout = async () => {
     try {
@@ -68,8 +85,20 @@ const Header: React.FC<HeaderProps> = ({
                 ScholarSnap
               </span>
             </div>
-
-            <div className="flex items-center space-x-1">
+            {/* Hamburger for mobile */}
+            <div className="flex md:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="p-2"
+                aria-label="Open menu"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+              >
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </div>
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center space-x-1">
               <Button
                 variant={currentPage === "home" ? "default" : "ghost"}
                 onClick={() => onNavigate?.("home")}
@@ -113,6 +142,88 @@ const Header: React.FC<HeaderProps> = ({
                 Login
               </Button>
             </div>
+            {/* Mobile Menu */}
+            {mobileMenuOpen && (
+              <div
+                ref={mobileMenuRef}
+                className="fixed inset-0 z-[99] bg-black/40 flex justify-end md:hidden transition"
+              >
+                <div className="w-2/3 max-w-xs bg-white h-full shadow-md px-5 py-6 space-y-2 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="font-bold text-2xl text-[#1E3A8A]">Menu</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Close menu"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="p-2"
+                    >
+                      <X className="w-6 h-6" />
+                    </Button>
+                  </div>
+                  <Button
+                    variant={currentPage === "home" ? "default" : "ghost"}
+                    onClick={() => {
+                      onNavigate?.("home");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="font-medium justify-start w-full"
+                  >
+                    Home
+                  </Button>
+                  <Button
+                    variant={currentPage === "about" ? "default" : "ghost"}
+                    onClick={() => {
+                      onNavigate?.("about");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="font-medium justify-start w-full"
+                  >
+                    About Us
+                  </Button>
+                  <Button
+                    variant={currentPage === "register" ? "default" : "ghost"}
+                    onClick={() => {
+                      onNavigate?.("register");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="font-medium justify-start w-full"
+                  >
+                    Register Institute
+                  </Button>
+                  <Button
+                    variant={currentPage === "faqs" ? "default" : "ghost"}
+                    onClick={() => {
+                      onNavigate?.("faqs");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="font-medium justify-start w-full"
+                  >
+                    FAQs
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigate("/contact");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="font-medium justify-start w-full"
+                  >
+                    Contact
+                  </Button>
+                  <Button
+                    variant={currentPage === "Login" ? "default" : "ghost"}
+                    onClick={() => {
+                      navigate("/login");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="font-medium justify-start w-full"
+                  >
+                    Login
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </nav>

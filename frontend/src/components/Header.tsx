@@ -113,13 +113,13 @@ const Header: React.FC<HeaderProps> = ({
               >
                 About Us
               </Button>
-              <Button
+              {/* <Button
                 variant={currentPage === "register" ? "default" : "ghost"}
                 onClick={() => onNavigate?.("register")}
                 className="font-medium"
               >
                 Register Institute
-              </Button>
+              </Button> */}
               <Button
                 variant={currentPage === "faqs" ? "default" : "ghost"}
                 onClick={() => onNavigate?.("faqs")}
@@ -181,7 +181,7 @@ const Header: React.FC<HeaderProps> = ({
                   >
                     About Us
                   </Button>
-                  <Button
+                  {/* <Button
                     variant={currentPage === "register" ? "default" : "ghost"}
                     onClick={() => {
                       onNavigate?.("register");
@@ -190,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({
                     className="font-medium justify-start w-full"
                   >
                     Register Institute
-                  </Button>
+                  </Button> */}
                   <Button
                     variant={currentPage === "faqs" ? "default" : "ghost"}
                     onClick={() => {

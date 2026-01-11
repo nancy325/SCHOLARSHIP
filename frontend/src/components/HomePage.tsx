@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Calendar, ArrowRight, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { apiService } from "@/services/api";
 
 // Import hero image - use same pattern as other files
 import heroImage from "@/assets/scholarship-hero.jpg";
@@ -8,36 +9,54 @@ import heroImage from "@/assets/scholarship-hero.jpg";
 const HomePage = () => {
   // Featured scholarships slider state
   const [currentFeatured, setCurrentFeatured] = useState(0);
-  const featuredItems = [
-    { 
-      id: 1,
-      title: "SCHAFFTER INDIA SOCIAL INNOVATOR FELLOWSHIP PROGRAM 2025", 
-      deadline: "September 15, 2025", 
-      tag: "Security",
-      tagColor: "bg-blue-100 text-blue-800"
-    },
-    { 
-      id: 2,
-      title: "DXC PROGRESSING MINDS SCHOLARSHIP 2025-28", 
-      deadline: "September 30, 2025", 
-      tag: "FCC",
-      tagColor: "bg-green-100 text-green-800"
-    },
-    { 
-      id: 3,
-      title: "OAKNORTH STEM SCHOLARSHIP PROGRAMME 2025-28", 
-      deadline: "October 10, 2025", 
-      tag: "STEM Focus",
-      tagColor: "bg-purple-100 text-purple-800"
-    },
-    { 
-      id: 4,
-      title: "BUDDYASTUDY 'EMPOWERING - SCHOLARSHIPS' TRAINING (BEST) PROGRAM", 
-      deadline: "September 15, 2025", 
-      tag: "Training Program",
-      tagColor: "bg-orange-100 text-orange-800"
-    },
-  ];
+  type FeaturedItem = {
+    id: number;
+    title: string;
+    deadline: string | null;
+    tag: string;
+    tagColor: string;
+  };
+  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
+
+  // Map scholarship type to tag styles (keeps UI consistent)
+  const typeToTagColor: Record<string, string> = {
+    government: "bg-blue-100 text-blue-800",
+    private: "bg-green-100 text-green-800",
+    university: "bg-purple-100 text-purple-800",
+    institute: "bg-orange-100 text-orange-800",
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadScholarships = async () => {
+      try {
+        const res = await apiService.getScholarships({ per_page: 10 });
+        console.log("HomePage: scholarships API response", res);
+        const top = (res as any)?.data;
+        const list = Array.isArray(top) ? top : (top?.data ?? []);
+        const mapped: FeaturedItem[] = Array.isArray(list)
+          ? list.map((s: any) => ({
+              id: s.id,
+              title: s.title,
+              deadline: s.deadline ?? null,
+              tag: s.type ? String(s.type).charAt(0).toUpperCase() + String(s.type).slice(1) : "Scholarship",
+              tagColor: s.type && typeToTagColor[s.type] ? typeToTagColor[s.type] : "bg-gray-100 text-gray-800",
+            }))
+          : [];
+        if (!cancelled) {
+          setFeaturedItems(mapped);
+          console.log("HomePage: mapped featured items", mapped);
+        }
+      } catch (e) {
+        console.error("Failed to load scholarships", e);
+        if (!cancelled) setFeaturedItems([]);
+      }
+    };
+    loadScholarships();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const nextFeatured = () => {
     if (featuredItems.length === 0) return;

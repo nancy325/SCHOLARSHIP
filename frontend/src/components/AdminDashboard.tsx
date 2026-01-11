@@ -106,15 +106,15 @@ const AdminDashboard = () => {
       description: 'Active users this month',
       color: 'bg-blue-100 text-blue-600'
     },
-    {
-      title: 'Registered Institutes',
-      value: dashboardStats.total_institutes?.toLocaleString() || '0',
-      change: '+8%',
-      changeType: 'positive',
-      icon: Building2,
-      description: 'Partner institutions',
-      color: 'bg-green-100 text-green-600'
-    },
+    // {
+    //   title: 'Registered Institutes',
+    //   value: dashboardStats.total_institutes?.toLocaleString() || '0',
+    //   change: '+8%',
+    //   changeType: 'positive',
+    //   icon: Building2,
+    //   description: 'Partner institutions',
+    //   color: 'bg-green-100 text-green-600'
+    // },
     {
       title: 'Active Scholarships',
       value: dashboardStats.active_scholarships?.toLocaleString() || '0',

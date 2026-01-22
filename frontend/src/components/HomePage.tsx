@@ -1,14 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Calendar, ArrowRight, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/api";
 
 // Import hero image - use same pattern as other files
 import heroImage from "@/assets/scholarship-hero.jpg";
 
 const HomePage = () => {
-  // Featured scholarships slider state
-  const [currentFeatured, setCurrentFeatured] = useState(0);
+  // Featured scholarships carousel state
+  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  
   type FeaturedItem = {
     id: number;
     title: string;
@@ -16,7 +21,6 @@ const HomePage = () => {
     tag: string;
     tagColor: string;
   };
-  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
 
   // Map scholarship type to tag styles (keeps UI consistent)
   const typeToTagColor: Record<string, string> = {
@@ -59,20 +63,20 @@ const HomePage = () => {
   }, []);
 
   const nextFeatured = () => {
-    if (featuredItems.length === 0) return;
-    setCurrentFeatured((prev) => (prev === featuredItems.length - 1 ? 0 : prev + 1));
+    if (!carouselRef.current) return;
+    const cardWidth = 320; // Width of each card (w-80 = 320px) + gap (24px)
+    const gap = 24;
+    const scrollAmount = cardWidth + gap;
+    carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
   
   const prevFeatured = () => {
-    if (featuredItems.length === 0) return;
-    setCurrentFeatured((prev) => (prev === 0 ? featuredItems.length - 1 : prev - 1));
+    if (!carouselRef.current) return;
+    const cardWidth = 320;
+    const gap = 24;
+    const scrollAmount = cardWidth + gap;
+    carouselRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
   };
-
-  // Ensure currentFeatured is within bounds
-  const safeCurrentFeatured = featuredItems.length > 0 
-    ? Math.min(currentFeatured, featuredItems.length - 1) 
-    : 0;
-  const currentItem = featuredItems[safeCurrentFeatured] || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,7 +113,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Featured Scholarships Section with Carousel */}
+      {/* Featured Scholarships Section with Horizontal Carousel */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -117,71 +121,86 @@ const HomePage = () => {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Explore our curated list of prestigious scholarship opportunities.</p>
           </div>
 
-          {/* Carousel Container */}
-          <div className="max-w-4xl mx-auto">
-            <div className="relative">
-              {/* Navigation Arrows */}
-              <button 
-                onClick={prevFeatured}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all"
-                aria-label="Previous scholarship"
-              >
-                <ChevronLeft className="w-5 h-5 text-foreground" />
-              </button>
-              
-              <button 
-                onClick={nextFeatured}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all"
-                aria-label="Next scholarship"
-              >
-                <ChevronRight className="w-5 h-5 text-foreground" />
-              </button>
+          {/* Horizontal Carousel Container */}
+          <div className="relative group">
+            {/* Left Navigation Arrow */}
+            <button 
+              onClick={prevFeatured}
+              className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+              aria-label="Previous scholarship"
+            >
+              <ChevronLeft className="w-6 h-6 text-foreground" />
+            </button>
+            
+            {/* Right Navigation Arrow */}
+            <button 
+              onClick={nextFeatured}
+              className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+              aria-label="Next scholarship"
+            >
+              <ChevronRight className="w-6 h-6 text-foreground" />
+            </button>
 
-              {/* Scholarship Card */}
-              {currentItem ? (
-                <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                  <h3 className="text-xl font-bold text-foreground mb-2">
-                    {currentItem.title}
-                  </h3>
-                  <div className="flex items-center text-muted-foreground mb-4">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <span>Deadline: {currentItem.deadline}</span>
+            {/* Carousel Track */}
+            <div 
+              ref={carouselRef}
+              className="flex gap-6 overflow-x-auto pb-4 scroll-smooth [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {featuredItems.length > 0 ? (
+                featuredItems.map((item) => (
+                  <div 
+                    key={item.id}
+                    className="flex-shrink-0 w-80 bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group/card border border-gray-100"
+                  >
+                    {/* Card Header */}
+                    <div className="h-32 bg-gradient-to-br from-blue-500 to-blue-600 p-4 flex items-end">
+                      <div className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center">
+                        <span className="text-2xl font-bold text-blue-600">🏢</span>
+                      </div>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-5">
+                      <h3 className="font-bold text-gray-800 text-base mb-3 line-clamp-2 group-hover/card:text-blue-600 transition-colors">
+                        {item.title}
+                      </h3>
+
+                      {/* Metadata */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            Deadline: <span className="font-semibold text-orange-600">{item.deadline || 'N/A'}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${item.tagColor}`}>
+                            {item.tag}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-2.5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md">
+                        View Detail
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className={`text-xs px-2 py-1 rounded-full ${currentItem.tagColor || 'bg-gray-100 text-gray-800'}`}>
-                      {currentItem.tag}
-                    </span>
-                    <a href="#" className="text-primary font-medium hover:underline flex items-center">
-                      View Details <ArrowRight className="w-4 h-4 ml-1" />
-                    </a>
-                  </div>
-                </div>
+                ))
               ) : (
-                <div className="bg-white p-6 rounded-lg shadow-md text-center">
+                <div className="w-full flex items-center justify-center py-12">
                   <p className="text-muted-foreground">No featured scholarships available</p>
                 </div>
               )}
             </div>
-
-            {/* Indicator Dots */}
-            {featuredItems.length > 0 && (
-              <div className="flex justify-center mt-6 space-x-2">
-                {featuredItems.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentFeatured(index)}
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      index === safeCurrentFeatured ? 'bg-primary' : 'bg-muted-foreground/30'
-                    }`}
-                    aria-label={`Go to scholarship ${index + 1}`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
           
           <div className="text-center mt-10">
-            <Button variant="outline" size="lg">
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => navigate("/all-scholarships")}
+            >
               View All Scholarships
             </Button>
           </div>

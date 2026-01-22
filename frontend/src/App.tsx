@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import StudentDashboardPage from "./components/StudentDashboardPage";
 import AdminDashboard from "./components/AdminDashboard";
 import ContactUsPage from "./components/ContactUsPage";
+import AllScholarships from "./components/AllScholarships";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/contact" element={<ContactUsPage />} />
+                <Route path="/all-scholarships" element={<AllScholarships />} />
                 <Route path="/student-dashboard" element={<StudentDashboardPage />} />
                 <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
                 <Route path="*" element={<NotFound />} />

@@ -1,18 +1,17 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, ArrowRight, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Calendar, ArrowRight, ChevronLeft, ChevronRight, GraduationCap, Trophy, Zap, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 import { apiService } from "@/services/api";
+import { useNavigate } from "react-router-dom";
 
 // Import hero image - use same pattern as other files
 import heroImage from "@/assets/scholarship-hero.jpg";
+import { useRef } from "react";
 
 const HomePage = () => {
-  // Featured scholarships carousel state
-  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
+  const carouselRef = useRef<HTMLDivElement>(null);
   
   type FeaturedItem = {
     id: number;
@@ -22,12 +21,26 @@ const HomePage = () => {
     tagColor: string;
   };
 
-  // Map scholarship type to tag styles (keeps UI consistent)
+  // Map scholarship type to tag styles and icons
   const typeToTagColor: Record<string, string> = {
-    government: "bg-blue-100 text-blue-800",
-    private: "bg-green-100 text-green-800",
-    university: "bg-purple-100 text-purple-800",
-    institute: "bg-orange-100 text-orange-800",
+    government: "bg-blue-50 text-blue-700 border border-blue-200",
+    private: "bg-green-50 text-green-700 border border-green-200",
+    university: "bg-purple-50 text-purple-700 border border-purple-200",
+    institute: "bg-orange-50 text-orange-700 border border-orange-200",
+  };
+
+  const typeToIcon: Record<string, any> = {
+    government: <Trophy className="w-6 h-6" />,
+    private: <Zap className="w-6 h-6" />,
+    university: <GraduationCap className="w-6 h-6" />,
+    institute: <Users className="w-6 h-6" />,
+  };
+
+  const typeToGradient: Record<string, string> = {
+    government: "from-blue-500 to-blue-600",
+    private: "from-green-500 to-green-600",
+    university: "from-purple-500 to-purple-600",
+    institute: "from-orange-500 to-orange-600",
   };
 
   useEffect(() => {
@@ -64,19 +77,18 @@ const HomePage = () => {
 
   const nextFeatured = () => {
     if (!carouselRef.current) return;
-    const cardWidth = 320; // Width of each card (w-80 = 320px) + gap (24px)
-    const gap = 24;
-    const scrollAmount = cardWidth + gap;
+    const scrollAmount = 336; // w-80 (320px) + gap-6 (24px) + buffer
     carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
   
   const prevFeatured = () => {
     if (!carouselRef.current) return;
-    const cardWidth = 320;
-    const gap = 24;
-    const scrollAmount = cardWidth + gap;
+    const scrollAmount = 336; // w-80 (320px) + gap-6 (24px) + buffer
     carouselRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
   };
+
+  // Carousel ref for future use (e.g., scroll, focus)
+  const carouselRefCheck = useRef<HTMLDivElement>(null);
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,76 +125,93 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Featured Scholarships Section with Horizontal Carousel */}
-      <section className="py-16 bg-background">
+      {/* Featured Scholarships Section with Carousel */}
+      <section className="py-20 bg-gradient-to-b from-background to-gray-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Featured Scholarships</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Explore our curated list of prestigious scholarship opportunities.</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Featured Scholarships</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Discover premium scholarship opportunities tailored for your success.</p>
           </div>
 
-          {/* Horizontal Carousel Container */}
+          {/* Carousel Container */}
           <div className="relative group">
-            {/* Left Navigation Arrow */}
+            {/* Navigation Arrows */}
             <button 
               onClick={prevFeatured}
-              className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl hover:bg-blue-50 transition-all duration-300 group-hover:scale-110"
               aria-label="Previous scholarship"
             >
-              <ChevronLeft className="w-6 h-6 text-foreground" />
+              <ChevronLeft className="w-6 h-6 text-blue-600" />
             </button>
             
-            {/* Right Navigation Arrow */}
             <button 
               onClick={nextFeatured}
-              className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl hover:bg-blue-50 transition-all duration-300 group-hover:scale-110"
               aria-label="Next scholarship"
             >
-              <ChevronRight className="w-6 h-6 text-foreground" />
+              <ChevronRight className="w-6 h-6 text-blue-600" />
             </button>
 
             {/* Carousel Track */}
             <div 
               ref={carouselRef}
-              className="flex gap-6 overflow-x-auto pb-4 scroll-smooth [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex gap-6 overflow-x-auto pb-4 scroll-smooth [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-12"
             >
               {featuredItems.length > 0 ? (
                 featuredItems.map((item) => (
                   <div 
                     key={item.id}
-                    className="flex-shrink-0 w-80 bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group/card border border-gray-100"
+                    className="flex-shrink-0 w-80 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group/card border border-gray-100 hover:border-blue-200 hover:-translate-y-2"
                   >
-                    {/* Card Header */}
-                    <div className="h-32 bg-gradient-to-br from-blue-500 to-blue-600 p-4 flex items-end">
-                      <div className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center">
-                        <span className="text-2xl font-bold text-blue-600">🏢</span>
+                    {/* Premium Card Header with gradient */}
+                    <div className={`h-40 bg-gradient-to-br ${typeToGradient[item.tag.toLowerCase()] || 'from-blue-500 to-blue-600'} p-6 flex flex-col justify-between relative overflow-hidden`}>
+                      {/* Decorative shapes */}
+                      <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/20 rounded-full"></div>
+                      <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full"></div>
+                      
+                      <div className="relative">
+                        <div className="w-14 h-14 bg-white/95 rounded-xl shadow-md flex items-center justify-center text-2xl group-hover/card:scale-110 transition-transform duration-300">
+                          {typeToIcon[item.tag.toLowerCase()] ? (
+                            <div className={`${item.tag.toLowerCase() === 'government' ? 'text-blue-600' : item.tag.toLowerCase() === 'private' ? 'text-green-600' : item.tag.toLowerCase() === 'university' ? 'text-purple-600' : 'text-orange-600'}`}>
+                              {typeToIcon[item.tag.toLowerCase()]}
+                            </div>
+                          ) : (
+                            '🎓'
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Top-right badge */}
+                      <div className="flex justify-end">
+                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full bg-white/95 ${item.tagColor}`}>
+                          {item.tag}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Card Content */}
-                    <div className="p-5">
-                      <h3 className="font-bold text-gray-800 text-base mb-3 line-clamp-2 group-hover/card:text-blue-600 transition-colors">
+                    {/* Enhanced Card Content */}
+                    <div className="p-6 space-y-4">
+                      {/* Title */}
+                      <h3 className="font-bold text-gray-900 text-lg line-clamp-2 group-hover/card:text-transparent group-hover/card:bg-clip-text group-hover/card:bg-gradient-to-r group-hover/card:from-blue-600 group-hover/card:to-purple-600 transition-all duration-300">
                         {item.title}
                       </h3>
 
-                      {/* Metadata */}
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">
-                            Deadline: <span className="font-semibold text-orange-600">{item.deadline || 'N/A'}</span>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${item.tagColor}`}>
-                            {item.tag}
-                          </span>
+                      {/* Divider */}
+                      <div className="h-px bg-gradient-to-r from-gray-200 to-transparent"></div>
+
+                      {/* Deadline Info - Enhanced */}
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-orange-50 to-red-50 p-3 rounded-lg border border-orange-100">
+                        <Calendar className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-600 font-medium">Application Deadline</span>
+                          <span className="text-sm font-bold text-orange-700">{item.deadline || 'N/A'}</span>
                         </div>
                       </div>
 
-                      {/* Action Button */}
-                      <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-2.5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md">
-                        View Detail
+                      {/* Action Button - Enhanced */}
+                      <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-bold text-sm flex items-center justify-center gap-2 group/btn hover:from-blue-700 hover:to-purple-700">
+                        View Details
+                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                       </button>
                     </div>
                   </div>
@@ -195,13 +224,15 @@ const HomePage = () => {
             </div>
           </div>
           
-          <div className="text-center mt-10">
+          <div className="text-center mt-12">
             <Button 
               variant="outline" 
               size="lg"
               onClick={() => navigate("/all-scholarships")}
+              className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold px-8"
             >
-              View All Scholarships
+              Explore All Scholarships
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
         </div>
@@ -231,3 +262,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+

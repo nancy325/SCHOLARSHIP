@@ -78,25 +78,11 @@ const RegisterInstitutePage = () => {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: "Registration Successful!",
-        description: "Your institute has been registered successfully. We'll contact you within 2-3 business days.",
-      });
-      
-      // Reset form
-      setFormData({
-        instituteName: "",
-        email: "",
-        contactNumber: "",
-        address: "",
-        district: "",
-        state: "",
-      });
-      
-      setIsSubmitting(false);
-    }, 2000);
+    toast({
+      title: "Details validated, not submitted",
+      description: "Institute registration is not connected to the backend yet. Your entries are still in this form.",
+    });
+    setIsSubmitting(false);
   };
 
   return (
@@ -155,13 +141,13 @@ const RegisterInstitutePage = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            <Card className="border-0 shadow-lg">
+            <Card className="border border-border shadow-sm">
               <CardHeader className="text-center pb-6">
                 <CardTitle className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                   Institute Registration Form
                 </CardTitle>
                 <p className="text-muted-foreground">
-                  Fill in the details below to register your educational institution
+                  Review your institution details. Submission is not available until registration is connected to the service.
                 </p>
               </CardHeader>
               
@@ -309,25 +295,13 @@ const RegisterInstitutePage = () => {
             </Card>
 
             {/* Additional Information */}
-            <Card className="mt-8 border-0 shadow-md bg-gradient-to-br from-primary/5 to-secondary/5">
+            <Card className="mt-8 border border-border bg-muted/40 shadow-none">
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-3">What Happens Next?</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Registration status</h3>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start">
                     <CheckCircle className="w-5 h-5 text-secondary mr-2 mt-0.5 flex-shrink-0" />
-                    <span>We'll verify your institute details within 2-3 business days</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-secondary mr-2 mt-0.5 flex-shrink-0" />
-                    <span>You'll receive login credentials via email upon approval</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-secondary mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Our team will provide onboarding support and training</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-secondary mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Start posting scholarships and managing applications</span>
+                    <span>Details entered here are validated in your browser only and have not been sent or saved.</span>
                   </li>
                 </ul>
               </CardContent>

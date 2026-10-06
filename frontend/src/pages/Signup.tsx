@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import heroImage from "@/assets/scholarship-hero.jpg";
 import { apiService } from '@/services/api';
+import { toast } from "sonner";
 
 interface FormData {
   name: string;
@@ -97,8 +98,7 @@ const Signup = () => {
         // Store user data and token
         apiService.storeUser(response.data.user);
         
-        // Show success message (you can add a toast notification here)
-        alert('Account created successfully! Welcome to Scholarship Portal!');
+        toast.success("Your account is ready");
         
         // Redirect to appropriate dashboard
         const role = (response.data.user as any).role;
@@ -183,85 +183,106 @@ const Signup = () => {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-900 opacity-90"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-foreground/90 via-primary/75 to-foreground/90"></div>
       </div>
-      <div className="relative z-10 bg-white p-8 rounded-2xl shadow-lg max-w-md w-full">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Create Account</h2>
+      <div className="relative z-10 my-8 w-full max-w-lg rounded-lg border border-white/60 bg-card/95 p-7 shadow-2xl backdrop-blur sm:p-9">
+        <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-primary">ScholarSnap</p>
+        <h2 className="mb-2 text-center text-3xl font-semibold text-foreground">Create your account</h2>
+        <p className="mb-7 text-center text-sm text-muted-foreground">Find opportunities that fit your next step.</p>
         
         {errors.general && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div role="alert" className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
             {errors.general}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-gray-700">Full Name</label>
+            <label htmlFor="signup-name" className="mb-2 block text-sm font-medium text-foreground">Full name</label>
             <input
+              id="signup-name"
               type="text"
               name="name"
+              autoComplete="name"
+              required
+              aria-invalid={Boolean(errors.name)}
               value={formData.name}
               onChange={handleInputChange}
               placeholder="John Doe"
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+              className={`h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 errors.name ? 'border-red-500' : ''
               }`}
             />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            {errors.name && <p role="alert" className="mt-1 text-sm text-destructive">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="block text-gray-700">Email</label>
+            <label htmlFor="signup-email" className="mb-2 block text-sm font-medium text-foreground">Email</label>
             <input
+              id="signup-email"
               type="email"
               name="email"
+              autoComplete="email"
+              required
+              aria-invalid={Boolean(errors.email)}
               value={formData.email}
               onChange={handleInputChange}
               placeholder="you@example.com"
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+              className={`h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 errors.email ? 'border-red-500' : ''
               }`}
             />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            {errors.email && <p role="alert" className="mt-1 text-sm text-destructive">{errors.email}</p>}
           </div>
 
           <div>
-            <label className="block text-gray-700">Password</label>
+            <label htmlFor="signup-password" className="mb-2 block text-sm font-medium text-foreground">Password</label>
             <input
+              id="signup-password"
               type="password"
               name="password"
+              autoComplete="new-password"
+              minLength={8}
+              required
+              aria-invalid={Boolean(errors.password)}
               value={formData.password}
               onChange={handleInputChange}
               placeholder="••••••••"
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+              className={`h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 errors.password ? 'border-red-500' : ''
               }`}
             />
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            {errors.password && <p role="alert" className="mt-1 text-sm text-destructive">{errors.password}</p>}
           </div>
 
           <div>
-            <label className="block text-gray-700">Confirm Password</label>
+            <label htmlFor="signup-password-confirmation" className="mb-2 block text-sm font-medium text-foreground">Confirm password</label>
             <input
+              id="signup-password-confirmation"
               type="password"
               name="password_confirmation"
+              autoComplete="new-password"
+              required
+              aria-invalid={Boolean(errors.password_confirmation)}
               value={formData.password_confirmation}
               onChange={handleInputChange}
               placeholder="••••••••"
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+              className={`h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 errors.password_confirmation ? 'border-red-500' : ''
               }`}
             />
-            {errors.password_confirmation && <p className="text-red-500 text-sm mt-1">{errors.password_confirmation}</p>}
+            {errors.password_confirmation && <p role="alert" className="mt-1 text-sm text-destructive">{errors.password_confirmation}</p>}
           </div>
 
           <div>
-            <label className="block text-gray-700">Category</label>
+            <label htmlFor="signup-category" className="mb-2 block text-sm font-medium text-foreground">Education level</label>
             <select 
+              id="signup-category"
               name="category"
+              required
               value={formData.category}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+              className={`h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 errors.category ? 'border-red-500' : ''
               }`}
             >
@@ -271,19 +292,19 @@ const Signup = () => {
               <option value="postgraduate">Postgraduate</option>
               <option value="other">Other</option>
             </select>
-            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            {errors.category && <p role="alert" className="mt-1 text-sm text-destructive">{errors.category}</p>}
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-11 w-full rounded-md bg-primary font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
         <p className="mt-4 text-center text-gray-600">
-          Already have an account? <Link to="/login" className="text-blue-600 font-medium">Login</Link>
+          Already have an account? <Link to="/login" className="font-semibold text-primary hover:underline">Login</Link>
         </p>
       </div>
     </div>

@@ -1,5 +1,5 @@
 // src/components/ui/StudentDashboard.tsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { apiService } from "@/services/api";
 import { 
   Calendar,
@@ -7,9 +7,19 @@ import {
   GraduationCap,
   ExternalLink,
   ChevronRight,
-  Filter
+  Filter,
+  Star,
+  ArrowUpRight,
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useScholarshipFavorites } from "@/hooks/useScholarshipFavorites";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Scholarship = {
   id: number;
@@ -57,8 +67,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const [totalItems, setTotalItems] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const [selectedScholarship, setSelectedScholarship] = useState<Scholarship | null>(null);
+  const { favorites, isFavorite, toggleFavorite } = useScholarshipFavorites();
+  const navigate = useNavigate();
   const location = useLocation();
 
   // Get current tab from query params
@@ -66,27 +79,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const currentTab = query.get("tab") || "dashboard";
   const shouldRender = currentTab === targetTab;
 
-  // Close filter menu on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) {
-        setFilterOpen(false);
-      }
-    }
-    if (filterOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [filterOpen]);
-
   // Fetch scholarships from API
   useEffect(() => {
     let isMounted = true;
     const fetchScholarships = async () => {
       try {
         setLoading(true);
+        setError(null);
+        setError(null);
         const params: any = {
           page: currentPage,
           per_page: 12,
@@ -108,10 +108,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
             setScholarships(data.data);
             setCurrentPage(data.current_page || 1);
             setTotalPages(data.last_page || 1);
+            setTotalItems(data.total || data.data.length);
           } else if (Array.isArray(data)) {
             setScholarships(data);
             setCurrentPage(1);
             setTotalPages(1);
+            setTotalItems(data.length);
+          } else {
+            setScholarships([]);
+            setCurrentPage(1);
+            setTotalPages(1);
+            setTotalItems(0);
           }
         }
       } catch (e: any) {
@@ -131,7 +138,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [currentPage, searchQuery, selectedType, currentTab, targetTab]);
+  }, [currentPage, searchQuery, selectedType, currentTab, retryCount, targetTab]);
 
 
   const getDaysLeft = (deadline: string | null | undefined): string => {
@@ -147,10 +154,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const getTypeBadge = (type: string) => {
     const badges: Record<string, { label: string; className: string }> = {
-      government: { label: "Government", className: "bg-blue-100 text-blue-700" },
-      private: { label: "Private", className: "bg-purple-100 text-purple-700" },
-      university: { label: "University", className: "bg-green-100 text-green-700" },
-      institute: { label: "Institute", className: "bg-orange-100 text-orange-700" },
+      government: { label: "Government", className: "bg-emerald-50 text-emerald-800" },
+      private: { label: "Private", className: "bg-amber-50 text-amber-900" },
+      university: { label: "University", className: "bg-sky-50 text-sky-800" },
+      institute: { label: "Institute", className: "bg-rose-50 text-rose-800" },
     };
     const badge = badges[type] || { label: type, className: "bg-gray-100 text-gray-700" };
     return (
@@ -181,8 +188,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <p className="text-red-600 font-medium">{error}</p>
           <button
-            onClick={() => window.location.reload()}
-            className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+            type="button"
+            onClick={() => setRetryCount((count) => count + 1)}
+            className="mt-4 font-medium text-primary hover:underline"
           >
             Try Again
           </button>
@@ -214,7 +222,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     <div className="flex items-center gap-2 mb-2">
                       {getTypeBadge(scholarship.type)}
                     </div>
-                    <h3 className="font-bold text-gray-800 text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                    <h3 className="font-bold text-gray-800 text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
                       {scholarship.title}
                     </h3>
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
@@ -244,23 +252,39 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between gap-2 pt-4 border-t border-gray-100">
                   <span className="text-xs text-gray-500">
                     {new Date(scholarship.created_at).toLocaleDateString()}
                   </span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleFavorite(scholarship)}
+                      aria-label={isFavorite(scholarship.id) ? "Remove from favorites" : "Add to favorites"}
+                      title={isFavorite(scholarship.id) ? "Remove from favorites" : "Add to favorites"}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Star className={`h-4 w-4 ${isFavorite(scholarship.id) ? "fill-current" : ""}`} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedScholarship(scholarship)}
+                      className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    >
+                      Details <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
                   {scholarship.apply_link ? (
                     <a
                       href={scholarship.apply_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                      className="flex items-center gap-1 text-primary hover:underline font-medium text-sm"
                     >
                       Apply <ExternalLink className="w-3 h-3" />
                     </a>
                   ) : (
-                    <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm">
-                      View Details <ChevronRight className="w-4 h-4" />
-                    </button>
+                    <span className="text-xs text-muted-foreground">No application link</span>
                   )}
                 </div>
               </div>
@@ -300,77 +324,97 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Available Scholarships</h1>
-        <p className="text-gray-600">Discover and apply for scholarships that match your profile</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary">Student workspace</p>
+        <h1 className="mb-2 mt-1 text-3xl font-semibold text-foreground">
+          {targetTab === "dashboard" ? "Your scholarship dashboard" : "Available scholarships"}
+        </h1>
+        <p className="text-muted-foreground">
+          {targetTab === "dashboard" ? "A clear view of current opportunities and your saved list." : "Search published opportunities and save the ones you want to revisit."}
+        </p>
       </div>
 
+      {targetTab === "dashboard" && (
+        <>
+          <div className="mb-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border border-border bg-card p-5">
+              <p className="text-sm text-muted-foreground">Published scholarships</p>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{loading ? "—" : totalItems.toLocaleString()}</p>
+            </div>
+            <button type="button" onClick={() => navigate("?tab=favorites")} className="rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <p className="text-sm text-muted-foreground">Saved in this browser</p>
+              <p className="mt-2 flex items-center justify-between text-3xl font-semibold text-foreground">{favorites.length}<ArrowUpRight className="h-5 w-5 text-primary" /></p>
+            </button>
+            <div className="rounded-lg border border-border bg-card p-5">
+              <p className="text-sm text-muted-foreground">Application links on this page</p>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{scholarships.filter((item) => item.apply_link).length}</p>
+            </div>
+          </div>
+          <div className="mb-6 flex flex-wrap gap-2">
+            <button type="button" onClick={() => navigate("?tab=profile")} className="inline-flex h-10 items-center rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground hover:bg-muted">Complete your profile</button>
+            <button type="button" onClick={() => navigate("?tab=faqs")} className="inline-flex h-10 items-center rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground hover:bg-muted">Scholarship FAQs</button>
+          </div>
+        </>
+      )}
+
       {/* Search and Filter Bar */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 relative">
+      <div className="mb-6 rounded-lg border border-border bg-card p-4">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]">
           {showSearchInput && (
-            <div className="flex-1">
+            <div className="flex-1 space-y-2">
+              <label htmlFor="student-scholarship-search" className="text-sm font-medium text-foreground">Search scholarships</label>
               <input
+                id="student-scholarship-search"
                 type="text"
+                aria-label="Search scholarships"
                 placeholder="Search scholarships..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
           )}
-          {/* Filter menu trigger */}
-          <div className="relative flex items-center">
-            <button
-              onClick={() => setFilterOpen((o) => !o)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-blue-300"
-              type="button"
-              aria-haspopup="true"
-              aria-expanded={filterOpen}
-              aria-controls="filter-menu"
+          <label className="space-y-2 text-sm font-medium text-foreground">
+            <span className="flex items-center gap-2"><Filter className="h-4 w-4" /> Provider type</span>
+            <select
+              value={selectedType}
+              onChange={(event) => {
+                setSelectedType(event.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Filter className="w-5 h-5" />
-              <span className="text-sm font-medium">
-                {TYPES.find((t) => t.value === selectedType)?.label || "All Types"}
-              </span>
-            </button>
-            {/* Filter menu dropdown */}
-            {filterOpen && (
-              <div
-                id="filter-menu"
-                ref={filterMenuRef}
-                className="absolute right-0 mt-2 z-20 min-w-[180px] rounded-xl bg-white shadow-lg border border-gray-200 p-2"
-              >
-                {TYPES.map((t) => (
-                  <button
-                    key={t.value}
-                    className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedType === t.value
-                        ? "bg-blue-600 text-white"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                    onClick={() => {
-                      setSelectedType(t.value);
-                      setCurrentPage(1);
-                      setFilterOpen(false);
-                    }}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              {TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+            </select>
+          </label>
         </div>
       </div>
 
       {/* Scholarships Grid */}
       {renderScholarships()}
+      <Dialog open={Boolean(selectedScholarship)} onOpenChange={(open) => !open && setSelectedScholarship(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+          {selectedScholarship && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedScholarship.title}</DialogTitle>
+                <DialogDescription>{selectedScholarship.type} scholarship</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 text-sm text-foreground">
+                <p className="whitespace-pre-wrap text-muted-foreground">{selectedScholarship.description || "No description is available yet."}</p>
+                {selectedScholarship.eligibility && <p><span className="font-semibold">Eligibility: </span>{selectedScholarship.eligibility}</p>}
+                {selectedScholarship.deadline && <p className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /> Deadline: {selectedScholarship.deadline}</p>}
+                {selectedScholarship.apply_link && <a href={selectedScholarship.apply_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90">Visit application <ExternalLink className="h-4 w-4" /></a>}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

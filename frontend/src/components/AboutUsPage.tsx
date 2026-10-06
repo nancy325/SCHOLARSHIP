@@ -1,8 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, Users, Target, Heart } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const AboutUsPage = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -204,7 +206,7 @@ const AboutUsPage = () => {
             </div>
 
             <div className="text-center mt-12">
-              <Button size="lg" className="px-8">
+              <Button size="lg" onClick={() => navigate("/contact")} className="px-8">
                 <Mail className="w-5 h-5 mr-2" />
                 Contact Our Team
               </Button>

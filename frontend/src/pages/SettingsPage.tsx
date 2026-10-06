@@ -1,67 +1,61 @@
 import React, { useState } from "react";
+import { LockKeyhole, MessageSquareText } from "lucide-react";
 
 const SettingsPage = () => {
-  const [password, setPassword] = useState("");
   const [feedback, setFeedback] = useState("");
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value);
-  const handleFeedbackChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setFeedback(e.target.value);
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate password change
-    setPassword("");
-    alert("Password changed (simulated)");
-  };
+  const [feedbackPreview, setFeedbackPreview] = useState("");
 
   const handleFeedbackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFeedback("");
-    alert("Feedback submitted (simulated)");
+    setFeedbackPreview(feedback.trim());
   };
 
   return (
-    <div className="flex justify-center py-12 px-4">
-      <div className="max-w-xl w-full bg-white/90 rounded-2xl shadow-lg p-8">
-        <h2 className="text-2xl font-bold mb-4 text-blue-900">Settings</h2>
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-2 text-blue-800">Change Password</h3>
-          <form onSubmit={handlePasswordSubmit} className="flex gap-2">
-            <input
-              type="password"
-              placeholder="New password"
-              value={password}
-              onChange={handlePasswordChange}
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              required
-            />
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-            >
-              Change
-            </button>
-          </form>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold mb-2 text-blue-800">Feedback</h3>
-          <form onSubmit={handleFeedbackSubmit}>
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <div className="mb-8">
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary">Account</p>
+        <h1 className="mt-1 text-3xl font-semibold text-foreground">Settings</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Security and support options for your student account.</p>
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="rounded-lg border border-border bg-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-accent-foreground"><LockKeyhole className="h-5 w-5" /></span>
+            <div>
+              <h2 className="font-semibold text-foreground">Password</h2>
+              <p className="text-sm text-muted-foreground">Account security</p>
+            </div>
+          </div>
+          <p className="text-sm leading-6 text-muted-foreground">Password changes are not connected to the account service yet. This page will not change or store your password.</p>
+          <span className="mt-5 inline-flex rounded-full bg-secondary/25 px-3 py-1 text-xs font-semibold text-foreground">Unavailable</span>
+        </section>
+
+        <section className="rounded-lg border border-border bg-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-accent-foreground"><MessageSquareText className="h-5 w-5" /></span>
+            <div>
+              <h2 className="font-semibold text-foreground">Feedback</h2>
+              <p className="text-sm text-muted-foreground">Prepare a local preview</p>
+            </div>
+          </div>
+          <form onSubmit={handleFeedbackSubmit} className="space-y-3">
+            <label htmlFor="student-feedback" className="text-sm font-medium text-foreground">Your feedback</label>
             <textarea
-              placeholder="Your feedback..."
+              id="student-feedback"
               value={feedback}
-              onChange={handleFeedbackChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"
-              rows={3}
+              onChange={(event) => setFeedback(event.target.value)}
+              className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               required
             />
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-            >
-              Submit Feedback
-            </button>
+            <button type="submit" className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Preview feedback</button>
           </form>
-        </div>
+          {feedbackPreview && (
+            <div role="status" className="mt-4 rounded-md border border-secondary/40 bg-secondary/10 p-3">
+              <p className="text-xs font-semibold uppercase text-foreground">Local preview only; not sent</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{feedbackPreview}</p>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

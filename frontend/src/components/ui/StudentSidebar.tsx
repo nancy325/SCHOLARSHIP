@@ -7,8 +7,9 @@ import {
   Wand2,
   Star,
   LifeBuoy,
-  Filter,
   BookText,
+  Settings,
+  CircleHelp,
 } from "lucide-react";
 
 type NavItem = {
@@ -30,8 +31,10 @@ const defaultNavItems: NavItem[] = [
   { key: "available", label: "Available Scholarships", icon: <BookText className="w-5 h-5" /> },
   { key: "matched", label: "Matched Scholarships", icon: <Wand2 className="w-5 h-5" /> },
   { key: "favorites", label: "Favorite Scholarships", icon: <Star className="w-5 h-5" /> },
-  { key: "search", label: "Search ", icon: <Search className="w-5 h-5" /> },
+  { key: "search", label: "Search", icon: <Search className="w-5 h-5" /> },
+  { key: "faqs", label: "FAQs", icon: <CircleHelp className="w-5 h-5" /> },
   { key: "support", label: "Support", icon: <LifeBuoy className="w-5 h-5" /> },
+  { key: "settings", label: "Settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 const StudentSidebar: React.FC<StudentSidebarProps> = ({
@@ -46,18 +49,18 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
       {/* Responsive Sidebar */}
       <aside
         id="student-sidebar"
-        className={`fixed lg:static top-16 lg:top-auto left-0 bottom-0 lg:bottom-auto z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed lg:static top-16 lg:top-auto left-0 bottom-0 lg:bottom-auto z-40 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
-        aria-hidden={!sidebarOpen}
+        aria-hidden={!sidebarOpen && window.innerWidth < 1024}
       >
-        <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen">
+          <div className="flex h-[calc(100vh-4rem)] flex-col lg:h-screen">
           {/* Sidebar Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 lg:hidden">
-            <span className="text-lg font-bold text-gray-800">Menu</span>
+          <div className="flex items-center justify-between border-b border-sidebar-border p-4 lg:hidden">
+            <span className="text-lg font-semibold text-sidebar-foreground">Menu</span>
             <button
               onClick={onClose}
-              className="p-2 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100"
+              className="rounded-md p-2 text-sidebar-foreground hover:bg-sidebar-accent"
               aria-label="Close sidebar"
               aria-controls="student-sidebar"
             >
@@ -70,11 +73,13 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
             {navItems.map((item) => (
               <button
                 key={item.key}
+                type="button"
                 onClick={() => onNavClick(item.key)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                aria-current={currentTab === item.key ? "page" : undefined}
+                className={`flex w-full items-center gap-3 rounded-md px-4 py-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring ${
                   currentTab === item.key
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}
               >
                 {item.icon}
@@ -84,9 +89,9 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500 text-center">
-              © 2024 ScholarSnap
+          <div className="border-t border-sidebar-border p-4">
+            <div className="text-center text-xs text-muted-foreground">
+              © {new Date().getFullYear()} ScholarSnap
             </div>
           </div>
         </div>
@@ -94,8 +99,9 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
 
       {/* Overlay for mobile sidebar */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-foreground/40 lg:hidden"
           onClick={onClose}
           aria-label="Sidebar backdrop"
         />

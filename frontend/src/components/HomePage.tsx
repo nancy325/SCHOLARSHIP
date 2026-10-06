@@ -8,9 +8,10 @@ import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/scholarship-hero.jpg";
 import { useRef } from "react";
 
-const HomePage = () => {
+const HomePage = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
   const navigate = useNavigate();
   const [featuredItems, setFeaturedItems] = useState<FeaturedItem[]>([]);
+  const [statistics, setStatistics] = useState<{ scholarships: number | null; active: number | null }>({ scholarships: null, active: null });
   const carouselRef = useRef<HTMLDivElement>(null);
   
   type FeaturedItem = {
@@ -23,10 +24,10 @@ const HomePage = () => {
 
   // Map scholarship type to tag styles and icons
   const typeToTagColor: Record<string, string> = {
-    government: "bg-blue-50 text-blue-700 border border-blue-200",
-    private: "bg-green-50 text-green-700 border border-green-200",
-    university: "bg-purple-50 text-purple-700 border border-purple-200",
-    institute: "bg-orange-50 text-orange-700 border border-orange-200",
+    government: "bg-emerald-50 text-emerald-800 border border-emerald-200",
+    private: "bg-amber-50 text-amber-900 border border-amber-200",
+    university: "bg-sky-50 text-sky-800 border border-sky-200",
+    institute: "bg-rose-50 text-rose-800 border border-rose-200",
   };
 
   const typeToIcon: Record<string, any> = {
@@ -37,10 +38,10 @@ const HomePage = () => {
   };
 
   const typeToGradient: Record<string, string> = {
-    government: "from-blue-500 to-blue-600",
-    private: "from-green-500 to-green-600",
-    university: "from-purple-500 to-purple-600",
-    institute: "from-orange-500 to-orange-600",
+    government: "from-emerald-700 to-emerald-900",
+    private: "from-amber-400 to-orange-500",
+    university: "from-sky-700 to-teal-800",
+    institute: "from-rose-600 to-orange-700",
   };
 
   useEffect(() => {
@@ -75,6 +76,23 @@ const HomePage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    apiService.getStats()
+      .then((response) => {
+        if (cancelled || !response.success || !response.data) return;
+        const data = response.data as any;
+        setStatistics({
+          scholarships: Number(data.total_scholarships ?? 0),
+          active: Number(data.active_scholarships ?? 0),
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setStatistics({ scholarships: null, active: null });
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   const nextFeatured = () => {
     if (!carouselRef.current) return;
     const scrollAmount = 336; // w-80 (320px) + gap-6 (24px) + buffer
@@ -87,9 +105,6 @@ const HomePage = () => {
     carouselRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
   };
 
-  // Carousel ref for future use (e.g., scroll, focus)
-  const carouselRefCheck = useRef<HTMLDivElement>(null);
-
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -98,13 +113,13 @@ const HomePage = () => {
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: heroImage ? `url(${heroImage})` : 'none' }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-900"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-foreground/90 via-primary/75 to-primary/40"></div>
         </div>
         <div className="relative container mx-auto px-4 py-24 md:py-32 text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
               Empowering Education Through
-              <span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-secondary to-secondary-glow bg-clip-text text-transparent">
                 Scholarships
               </span>
             </h1>
@@ -113,11 +128,11 @@ const HomePage = () => {
               Building bridges to brighter futures, one scholarship at a time.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-3">
+              <Button size="lg" onClick={() => navigate("/all-scholarships")} className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-3">
                 <GraduationCap className="w-5 h-5 mr-2" />
                 Explore Scholarships
               </Button>
-              <Button variant="outline" size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-3">
+              <Button variant="outline" size="lg" onClick={() => onNavigate("about")} className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-3">
                 Learn More
               </Button>
             </div>
@@ -138,18 +153,18 @@ const HomePage = () => {
             {/* Navigation Arrows */}
             <button 
               onClick={prevFeatured}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl hover:bg-blue-50 transition-all duration-300 group-hover:scale-110"
+              className="absolute left-0 top-1/2 z-10 -translate-x-6 -translate-y-1/2 rounded-md border border-border bg-card p-3 text-primary shadow-sm transition-colors hover:bg-muted"
               aria-label="Previous scholarship"
             >
-              <ChevronLeft className="w-6 h-6 text-blue-600" />
+              <ChevronLeft className="w-6 h-6" />
             </button>
             
             <button 
               onClick={nextFeatured}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl hover:bg-blue-50 transition-all duration-300 group-hover:scale-110"
+              className="absolute right-0 top-1/2 z-10 translate-x-6 -translate-y-1/2 rounded-md border border-border bg-card p-3 text-primary shadow-sm transition-colors hover:bg-muted"
               aria-label="Next scholarship"
             >
-              <ChevronRight className="w-6 h-6 text-blue-600" />
+              <ChevronRight className="w-6 h-6" />
             </button>
 
             {/* Carousel Track */}
@@ -161,29 +176,25 @@ const HomePage = () => {
                 featuredItems.map((item) => (
                   <div 
                     key={item.id}
-                    className="flex-shrink-0 w-80 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group/card border border-gray-100 hover:border-blue-200 hover:-translate-y-2"
+                    className="group/card w-80 flex-shrink-0 overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
                   >
                     {/* Premium Card Header with gradient */}
-                    <div className={`h-40 bg-gradient-to-br ${typeToGradient[item.tag.toLowerCase()] || 'from-blue-500 to-blue-600'} p-6 flex flex-col justify-between relative overflow-hidden`}>
-                      {/* Decorative shapes */}
-                      <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/20 rounded-full"></div>
-                      <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full"></div>
-                      
-                      <div className="relative">
-                        <div className="w-14 h-14 bg-white/95 rounded-xl shadow-md flex items-center justify-center text-2xl group-hover/card:scale-110 transition-transform duration-300">
+                    <div className={`relative flex h-40 flex-col justify-between overflow-hidden bg-gradient-to-br p-6 ${typeToGradient[item.tag.toLowerCase()] || 'from-emerald-700 to-emerald-900'}`}>
+                      <div>
+                        <div className="flex h-14 w-14 items-center justify-center rounded-md bg-white/95 text-2xl shadow-sm transition-transform duration-300 group-hover/card:scale-105">
                           {typeToIcon[item.tag.toLowerCase()] ? (
-                            <div className={`${item.tag.toLowerCase() === 'government' ? 'text-blue-600' : item.tag.toLowerCase() === 'private' ? 'text-green-600' : item.tag.toLowerCase() === 'university' ? 'text-purple-600' : 'text-orange-600'}`}>
+                            <div className={`${item.tag.toLowerCase() === 'government' ? 'text-emerald-800' : item.tag.toLowerCase() === 'private' ? 'text-amber-800' : item.tag.toLowerCase() === 'university' ? 'text-sky-800' : 'text-rose-800'}`}>
                               {typeToIcon[item.tag.toLowerCase()]}
                             </div>
                           ) : (
-                            '🎓'
+                            <GraduationCap className="h-6 w-6 text-primary" />
                           )}
                         </div>
                       </div>
 
                       {/* Top-right badge */}
                       <div className="flex justify-end">
-                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full bg-white/95 ${item.tagColor}`}>
+                        <span className={`rounded-md bg-white/95 px-3 py-1.5 text-xs font-semibold ${item.tagColor}`}>
                           {item.tag}
                         </span>
                       </div>
@@ -192,7 +203,7 @@ const HomePage = () => {
                     {/* Enhanced Card Content */}
                     <div className="p-6 space-y-4">
                       {/* Title */}
-                      <h3 className="font-bold text-gray-900 text-lg line-clamp-2 group-hover/card:text-transparent group-hover/card:bg-clip-text group-hover/card:bg-gradient-to-r group-hover/card:from-blue-600 group-hover/card:to-purple-600 transition-all duration-300">
+                      <h3 className="line-clamp-2 text-lg font-semibold text-foreground transition-colors group-hover/card:text-primary">
                         {item.title}
                       </h3>
 
@@ -209,7 +220,10 @@ const HomePage = () => {
                       </div>
 
                       {/* Action Button - Enhanced */}
-                      <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-bold text-sm flex items-center justify-center gap-2 group/btn hover:from-blue-700 hover:to-purple-700">
+                      <button
+                        onClick={() => navigate(`/all-scholarships?search=${encodeURIComponent(item.title)}`)}
+                        className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-sm flex items-center justify-center gap-2 group/btn"
+                      >
                         View Details
                         <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                       </button>
@@ -229,7 +243,7 @@ const HomePage = () => {
               variant="outline" 
               size="lg"
               onClick={() => navigate("/all-scholarships")}
-              className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold px-8"
+              className="border-primary text-primary hover:bg-primary/5 font-semibold px-8"
             >
               Explore All Scholarships
               <ArrowRight className="w-5 h-5 ml-2" />
@@ -241,18 +255,14 @@ const HomePage = () => {
       {/* Statistics Section */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto text-center">
+          <div className="grid gap-8 text-center sm:grid-cols-2">
             <div>
-              <div className="text-4xl md:text-5xl font-bold text-primary mb-2">10,000+</div>
-              <div className="text-lg text-muted-foreground">Students Benefited</div>
+              <div className="mb-2 text-4xl font-semibold text-primary md:text-5xl">{statistics.scholarships?.toLocaleString() ?? "—"}</div>
+              <div className="text-lg text-muted-foreground">Scholarships listed</div>
             </div>
             <div>
-              <div className="text-4xl md:text-5xl font-bold text-secondary mb-2">500+</div>
-              <div className="text-lg text-muted-foreground">Partner Institutes</div>
-            </div>
-            <div>
-              <div className="text-4xl md:text-5xl font-bold text-primary mb-2">₹50Cr+</div>
-              <div className="text-lg text-muted-foreground">Scholarships Awarded</div>
+              <div className="mb-2 text-4xl font-semibold text-secondary-foreground md:text-5xl">{statistics.active?.toLocaleString() ?? "—"}</div>
+              <div className="text-lg text-muted-foreground">Currently active</div>
             </div>
           </div>
         </div>

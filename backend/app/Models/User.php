@@ -63,4 +63,32 @@ class User extends Authenticatable
     {
         return $this->belongsTo(University::class);
     }
+
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
+    }
+
+    public function applications()
+    {
+        return $this->hasMany(ScholarshipApplication::class);
+    }
+
+    public const ADMIN_ROLES = ['super_admin', 'admin', 'university_admin', 'institute_admin'];
+
+    public function isAdmin(): bool
+    {
+        return in_array($this->role, self::ADMIN_ROLES, true);
+    }
+
+    /** super_admin / admin: full platform access */
+    public function isPlatformAdmin(): bool
+    {
+        return in_array($this->role, ['super_admin', 'admin'], true);
+    }
+
+    public function roleLabel(): string
+    {
+        return ucwords(str_replace('_', ' ', $this->role ?? 'student'));
+    }
 }

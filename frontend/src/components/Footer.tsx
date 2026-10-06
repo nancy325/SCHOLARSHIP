@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 
 interface FooterProps {
@@ -22,24 +23,12 @@ const Footer: React.FC<FooterProps> = ({ className = "" }) => {
             © {currentYear} ScholarSnap. All rights reserved.
           </div>
           <div className="flex gap-4 text-sm">
-            <a
-              className="text-muted-foreground hover:text-foreground"
-              href="#"
-            >
-              Privacy
-            </a>
-            <a
-              className="text-muted-foreground hover:text-foreground"
-              href="#"
-            >
-              Terms
-            </a>
-            <a
-              className="text-muted-foreground hover:text-foreground"
-              href="#"
-            >
-              Support
-            </a>
+            <Link to="/contact" className="text-muted-foreground hover:text-foreground">
+              Contact
+            </Link>
+            <Link to="/all-scholarships" className="text-muted-foreground hover:text-foreground">
+              Scholarships
+            </Link>
           </div>
         </div>
       </div>

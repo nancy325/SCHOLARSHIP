@@ -36,7 +36,7 @@ class RegisterRequest extends FormRequest
                     ->symbols()           // Must contain at least one special character
                     ->uncompromised()     // Check against compromised passwords database
             ],
-            'category' => ['required', 'string', 'in:high-school,diploma,undergraduate,postgraduate,other'],
+            'category' => ['required', 'string', 'in:high-school,diploma,undergraduate,postgraduate,phd,other'],
         ];
     }
 

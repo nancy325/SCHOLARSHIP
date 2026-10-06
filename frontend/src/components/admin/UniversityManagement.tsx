@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const UniversityManagement = () => {
   const navigate = useNavigate();
@@ -112,13 +113,13 @@ const UniversityManagement = () => {
           accreditation: '',
         });
         fetchUniversities();
-        alert('University updated successfully');
+        toast.success('University updated successfully');
       } else {
-        alert(resp.message || 'Failed to update university');
+        toast.error(resp.message || 'Failed to update university');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to update university');
+      toast.error('Failed to update university');
     } finally {
       setUpdating(false);
     }
@@ -131,13 +132,13 @@ const UniversityManagement = () => {
       const resp = await apiService.deleteUniversity(uni.id);
       if (resp.success) {
         fetchUniversities();
-        alert('University deleted successfully');
+        toast.success('University deleted successfully');
       } else {
-        alert(resp.message || 'Failed to delete university');
+        toast.error(resp.message || 'Failed to delete university');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to delete university');
+      toast.error('Failed to delete university');
     } finally {
       setDeletingId(null);
     }
@@ -145,10 +146,10 @@ const UniversityManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h3 className="text-lg font-semibold">University Management</h3>
-          <p className="text-sm text-gray-600">Manage partner universities and their profiles</p>
+          <p className="text-sm text-muted-foreground">Manage partner universities and their profiles</p>
         </div>
         <Button onClick={() => navigate('/admin-dashboard/universities/create')}>
           <Plus className="mr-2 h-4 w-4" />
@@ -156,11 +157,11 @@ const UniversityManagement = () => {
         </Button>
       </div>
 
-      <Card>
+      <Card className="border-border shadow-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search universities..."
                 value={searchTerm}
@@ -189,14 +190,14 @@ const UniversityManagement = () => {
           </div>
         ) : filteredUniversities.length > 0 ? (
           filteredUniversities.map((university: any) => (
-            <Card key={university.id} className="hover:shadow-md transition-shadow">
+            <Card key={university.id} className="border-border shadow-sm transition-shadow hover:shadow-md">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg">{university.name}</CardTitle>
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <GraduationCap className="h-4 w-4" />
-                      <Badge className="bg-blue-100 text-blue-800">University</Badge>
+                      <Badge className="bg-sky-50 text-sky-800">University</Badge>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -227,28 +228,28 @@ const UniversityManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <Mail className="h-4 w-4" />
                     <span>{university.email}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     <span>{university.phone || 'N/A'}</span>
                   </div>
                   {university.website && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                       <Globe className="h-4 w-4" />
-                      <a href={university.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      <a href={university.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                         {university.website}
                       </a>
                     </div>
                   )}
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <MapPin className="h-4 w-4" />
                     <span className="truncate">{university.address || 'N/A'}</span>
                   </div>
                   {university.description && (
-                    <div className="text-sm text-gray-600 line-clamp-2">
+                    <div className="line-clamp-2 text-sm text-muted-foreground">
                       {university.description}
                     </div>
                   )}

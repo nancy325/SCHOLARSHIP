@@ -7,7 +7,6 @@ import Footer from "@/components/Footer";
 
 const ContactUsPage = () => {
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -17,11 +16,7 @@ const ContactUsPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setIsSubmitting(false);
     setIsSubmitted(true);
-    setForm({ name: "", email: "", subject: "", message: "" });
   };
 
   return (
@@ -36,8 +31,8 @@ const ContactUsPage = () => {
 
           <div className="max-w-3xl mx-auto">
             {isSubmitted && (
-              <div className="mb-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-green-800">
-                Thank you! Your message has been sent successfully.
+              <div role="status" className="mb-6 rounded-md border border-secondary/40 bg-secondary/10 px-4 py-3 text-sm text-foreground">
+                This is a local preview: your message has not been sent. Your entries remain in the form.
               </div>
             )}
             <Card className="border-0 shadow-md">
@@ -45,24 +40,24 @@ const ContactUsPage = () => {
                 <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-1">
                     <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name</label>
-                    <input id="name" name="name" value={form.name} onChange={handleChange} required className="w-full rounded-md border border-input bg-background px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Your Name" />
+                    <input id="name" name="name" autoComplete="name" value={form.name} onChange={handleChange} required className="h-11 w-full rounded-md border border-input bg-background px-3 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Your name" />
                   </div>
                   <div className="sm:col-span-1">
                     <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">Email</label>
-                    <input id="email" type="email" name="email" value={form.email} onChange={handleChange} required className="w-full rounded-md border border-input bg-background px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="you@example.com" />
+                    <input id="email" type="email" name="email" autoComplete="email" value={form.email} onChange={handleChange} required className="h-11 w-full rounded-md border border-input bg-background px-3 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="you@example.com" />
                   </div>
                   <div className="sm:col-span-2">
                     <label htmlFor="subject" className="block text-sm font-medium text-foreground mb-1">Subject</label>
-                    <input id="subject" name="subject" value={form.subject} onChange={handleChange} required className="w-full rounded-md border border-input bg-background px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="How can we help?" />
+                    <input id="subject" name="subject" value={form.subject} onChange={handleChange} required className="h-11 w-full rounded-md border border-input bg-background px-3 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="How can we help?" />
                   </div>
                   <div className="sm:col-span-2">
                     <label htmlFor="message" className="block text-sm font-medium text-foreground mb-1">Message</label>
-                    <textarea id="message" name="message" value={form.message} onChange={handleChange} required rows={5} className="w-full rounded-md border border-input bg-background px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Write your message here..." />
+                    <textarea id="message" name="message" value={form.message} onChange={handleChange} required rows={5} className="w-full rounded-md border border-input bg-background px-3 py-2 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Write your message here..." />
                   </div>
                   <div className="sm:col-span-2">
-                    <Button type="submit" disabled={isSubmitting} className="inline-flex items-center gap-2 bg-[#1E3A8A] hover:bg-[#153074]">
+                    <Button type="submit" className="inline-flex items-center gap-2">
                       <Send className="w-4 h-4" />
-                      {isSubmitting ? "Sending..." : "Submit"}
+                      Preview message
                     </Button>
                   </div>
                 </form>

@@ -271,7 +271,7 @@ class AdminSeeder extends Seeder
                 'name' => 'Jane Smith',
                 'email' => 'jane.smith@example.com',
                 'password' => Hash::make('password123'),
-                'category' => 'graduate',
+                'category' => 'postgraduate',
                 'role' => 'student',
                 'institute_id' => $createdInstitutes[1]->id,
             ],
@@ -309,30 +309,8 @@ class AdminSeeder extends Seeder
             );
         }
 
-        // Create India-focused scholarships aligned to spec
+        // Demo university / institute scholarships (sample data — university admins replace these with their own)
         $scholarships = [
-            [
-                'title' => 'National Means-cum-Merit Scholarship (NMMSS)',
-                'type' => 'government',
-                'university_id' => null,
-                'institute_id' => null,
-                'description' => 'Central Sector scheme to award scholarships to meritorious students of economically weaker sections.',
-                'eligibility' => 'Students of Class IX-XII with parental income below threshold and minimum marks criteria.',
-                'start_date' => now()->subMonths(1)->toDateString(),
-                'deadline' => now()->addMonths(2)->toDateString(),
-                'apply_link' => 'https://scholarships.gov.in/',
-            ],
-            [
-                'title' => 'Prime Minister\'s Research Fellowship (PMRF)',
-                'type' => 'government',
-                'university_id' => $createdUniversities[0]->id,
-                'institute_id' => null,
-                'description' => 'Fellowship to attract the best talent into research at leading institutions like IITs and IISc.',
-                'eligibility' => 'B.Tech/Integrated M.Tech/MS from IIs/IITs/IISc with high CGPA or GATE score.',
-                'start_date' => now()->toDateString(),
-                'deadline' => now()->addMonths(3)->toDateString(),
-                'apply_link' => 'https://pmrf.in/',
-            ],
             [
                 'title' => 'IIT Bombay Institute Scholarship',
                 'type' => 'institute',
@@ -356,29 +334,6 @@ class AdminSeeder extends Seeder
                 'apply_link' => 'https://www.ststephens.edu/scholarships/',
             ],
             [
-                'title' => 'Tata Scholarship (Private)',
-                'type' => 'private',
-                'university_id' => null,
-                'institute_id' => null,
-                'description' => 'Private sector support for Indian students pursuing higher education.',
-                'eligibility' => 'Indian citizens with strong academics and means criteria.',
-                'start_date' => now()->subMonth()->toDateString(),
-                'deadline' => now()->addMonths(4)->toDateString(),
-                'apply_link' => 'https://www.tatatrusts.org/our-work/individual-grants-programme/education-grants',
-            ],
-            // Gujarat specific
-            [
-                'title' => 'Mukhyamantri Yuva Swavalamban Yojana (MYSY) - Gujarat',
-                'type' => 'government',
-                'university_id' => $createdUniversities[2]->id, // GTU
-                'institute_id' => null,
-                'description' => 'Government of Gujarat scholarship for bright and needy students in higher education.',
-                'eligibility' => 'Resident of Gujarat, academic merit and income criteria as per scheme.',
-                'start_date' => now()->subWeeks(3)->toDateString(),
-                'deadline' => now()->addMonths(2)->toDateString(),
-                'apply_link' => 'https://mysy.guj.nic.in',
-            ],
-            [
                 'title' => 'GTU Merit Scholarship for Engineering Undergraduates',
                 'type' => 'university',
                 'university_id' => $createdUniversities[2]->id, // GTU
@@ -400,7 +355,6 @@ class AdminSeeder extends Seeder
                 'deadline' => now()->addMonths(1)->toDateString(),
                 'apply_link' => 'https://ldce.ac.in/alumni',
             ],
-            // CHARUSAT scholarships
             [
                 'title' => 'CHARUSAT Merit Scholarship',
                 'type' => 'university',
@@ -434,7 +388,6 @@ class AdminSeeder extends Seeder
                 'deadline' => now()->addMonths(1)->toDateString(),
                 'apply_link' => 'https://www.charusat.ac.in/cspit/scholarships',
             ],
-            // Additional CHARUSAT scholarships (representative set)
             [
                 'title' => 'CHARUSAT Sports Excellence Scholarship',
                 'type' => 'university',
@@ -581,25 +534,297 @@ class AdminSeeder extends Seeder
         ];
 
         $createdScholarships = [];
-        foreach ($scholarships as $scholarshipData) {
-            $scholarship = Scholarship::firstOrCreate(
-                [
-                    'title' => $scholarshipData['title'],
-                ],
-                $scholarshipData + ['created_by' => $admin->id]
+        $sampleNote = 'Sample entry for demonstration. The university/institute admin should replace it with official details.';
+        foreach (array_merge($this->verifiedSchemes(), $scholarships) as $scholarshipData) {
+            $isDemo = in_array($scholarshipData['type'], ['university', 'institute'], true);
+            if ($isDemo) {
+                $scholarshipData = array_merge(
+                    ['own_students_only' => true, 'benefits' => $sampleNote],
+                    $this->demoRules()[$scholarshipData['title']] ?? [],
+                    $scholarshipData
+                );
+            }
+            $scholarship = Scholarship::updateOrCreate(
+                ['title' => $scholarshipData['title']],
+                $scholarshipData + ['created_by' => $admin->id, 'RecStatus' => 'active']
             );
             $createdScholarships[] = $scholarship;
-            
+
             if ($scholarship->wasRecentlyCreated && $scholarship->institute_id) {
-            $institute = Institute::find($scholarship->institute_id);
-                if ($institute) {
-            $institute->increment('scholarships_count');
-                }
+                Institute::whereKey($scholarship->institute_id)->increment('scholarships_count');
             }
         }
 
+        // Older seed entries replaced by verified schemes
+        Scholarship::whereIn('title', ['Tata Scholarship (Private)'])->update(['RecStatus' => 'inactive']);
+
+        // Student profiles used for eligibility matching (demo values)
+        $this->seedStudentProfiles();
 
         $this->command->info('Sample data created successfully!');
         $this->command->info('Admin login: admin@scholarship.com / password123');
+    }
+
+    /**
+     * National / state schemes. Figures checked in September 2026 against the official
+     * portals and scheme guidelines (NSP, AICTE, pmrf.in, MYSY, Digital Gujarat, DST INSPIRE)
+     * and the sponsors' own pages. Amounts, income limits and deadlines change every year —
+     * update them here or from the admin panel when a new cycle opens.
+     */
+    private function verifiedSchemes(): array
+    {
+        $in = fn (int $days) => now()->addDays($days)->toDateString();
+
+        return [
+            [
+                'title' => 'National Means-cum-Merit Scholarship (NMMSS)',
+                'provider' => 'Ministry of Education, Government of India',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Central sector scheme that awards scholarships to meritorious students from economically weaker sections to stop them dropping out after Class 8 and encourage them to continue to Class 12.',
+                'eligibility' => "Selected through the state-level NMMS exam taken in Class 8.\nMinimum 55% marks in Class 8 (5% relaxation for SC/ST).\nAnnual parental income not more than Rs 3,50,000.\nMust study in a government, government-aided or local-body school.\nTo keep the scholarship: 60% in Class 10 (55% SC/ST) and 55% in Class 11.",
+                'award_amount' => 12000,
+                'award_frequency' => 'per_year',
+                'benefits' => 'Rs 12,000 per year (Rs 1,000 per month) for Classes 9 to 12, paid directly to the bank account through NSP.',
+                'education_levels' => ['high-school'],
+                'max_family_income' => 350000,
+                'min_percentage' => 55,
+                'gender' => 'any',
+                'documents_required' => "NMMS exam result / selection letter\nIncome certificate of parents\nClass 8 marksheet\nCaste certificate (SC/ST, if applicable)\nAadhaar and bank account details",
+                'start_date' => now()->subDays(20)->toDateString(),
+                'deadline' => '2026-10-31',
+                'apply_link' => 'https://scholarships.gov.in/',
+            ],
+            [
+                'title' => 'Central Sector Scheme of Scholarship for College and University Students',
+                'provider' => 'Department of Higher Education, Ministry of Education',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Merit scholarship for students who scored above the 80th percentile in their Class 12 board exam and are pursuing a regular UG or PG degree.',
+                'eligibility' => "Above 80th percentile of successful candidates in Class 12 of your board.\nPursuing a regular (not distance/correspondence/diploma) UG or PG course.\nAnnual family income not more than Rs 4,50,000.\nNot receiving any other scholarship.\nRenewal needs 50% marks and 75% attendance each year.",
+                'award_amount' => 12000,
+                'award_frequency' => 'per_year',
+                'benefits' => "UG (first 3 years): Rs 12,000 per year.\nPG, and 4th/5th year of professional courses: Rs 20,000 per year.",
+                'education_levels' => ['undergraduate', 'postgraduate'],
+                'max_family_income' => 450000,
+                'min_percentage' => 80,
+                'gender' => 'any',
+                'documents_required' => "Class 12 marksheet\nIncome certificate\nCollege admission / bonafide certificate\nAadhaar and bank account details",
+                'start_date' => now()->subDays(60)->toDateString(),
+                'deadline' => '2026-09-30',
+                'apply_link' => 'https://scholarships.gov.in/',
+            ],
+            [
+                'title' => 'Prime Minister\'s Research Fellowship (PMRF)',
+                'provider' => 'Ministry of Education, Government of India',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Fellowship to attract the best talent into doctoral research at IITs, IISc, IISERs, NITs and other top institutions.',
+                'eligibility' => "PhD admission (direct entry or lateral entry) at a PMRF-granting institution (IITs, IISc, IISERs, and other notified institutes).\nDirect entry: final year or completed B.Tech / integrated M.Tech / 5-year integrated M.Sc / UG-PG dual degree in science or technology with high CGPA, as per current PMRF guidelines.\nSelection through the PMRF selection committee.",
+                'award_amount' => 70000,
+                'award_frequency' => 'per_month',
+                'benefits' => "Fellowship of Rs 70,000 per month in years 1–2, Rs 75,000 in year 3 and Rs 80,000 in years 4–5.\nResearch grant of Rs 2 lakh per year (Rs 10 lakh over 5 years).",
+                'education_levels' => ['phd'],
+                'max_family_income' => null,
+                'gender' => 'any',
+                'documents_required' => "Degree certificates and transcripts\nResearch proposal\nRecommendation letters\nPhD admission letter",
+                'start_date' => now()->subDays(10)->toDateString(),
+                'deadline' => $in(75),
+                'apply_link' => 'https://www.pmrf.in/',
+            ],
+            [
+                'title' => 'Mukhyamantri Yuva Swavalamban Yojana (MYSY) - Gujarat',
+                'provider' => 'Education Department, Government of Gujarat',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Government of Gujarat support for bright students from families with modest income who take admission in diploma or degree courses in Gujarat.',
+                'eligibility' => "Domicile of Gujarat.\nAnnual family income less than Rs 6,00,000.\nDiploma: 80 percentile or more in Class 10.\nDegree: 80 percentile or more in Class 12 (Science / General stream).\nDiploma-to-degree: 65% or more in diploma.",
+                'award_amount' => 50000,
+                'award_frequency' => 'per_year',
+                'benefits' => "Tuition fee: 50% of fee up to Rs 50,000 (engineering, pharmacy, technical), up to Rs 2,00,000 (medical, dental), up to Rs 10,000 (BA, B.Sc, B.Com, BBA, BCA).\nHostel assistance: Rs 1,200 per month for 10 months (students studying outside their taluka).\nOne-time support for books and instruments.",
+                'education_levels' => ['diploma', 'undergraduate'],
+                'max_family_income' => 600000,
+                'min_percentage' => 80,
+                'gender' => 'any',
+                'state' => 'Gujarat',
+                'documents_required' => "Income certificate\nClass 10/12 marksheet\nAdmission letter and fee receipt\nDomicile certificate\nAadhaar and bank account details",
+                'start_date' => '2026-07-01',
+                'deadline' => '2026-09-23',
+                'apply_link' => 'https://mysy.guj.nic.in/',
+            ],
+            [
+                'title' => 'AICTE Pragati Scholarship for Girls (Degree & Diploma)',
+                'provider' => 'All India Council for Technical Education (AICTE)',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Scholarship to encourage girls to pursue technical education — 5,000 scholarships for degree and 5,000 for diploma students every year.',
+                'eligibility' => "Girl students admitted to the 1st year (or 2nd year through lateral entry) of an AICTE-approved technical degree or diploma course.\nAnnual family income not more than Rs 8,00,000.\nMaximum two girl children per family.",
+                'award_amount' => 50000,
+                'award_frequency' => 'per_year',
+                'benefits' => 'Rs 50,000 per year for every year of study (up to 4 years for degree, 3 years for diploma).',
+                'education_levels' => ['diploma', 'undergraduate'],
+                'max_family_income' => 800000,
+                'gender' => 'female',
+                'documents_required' => "Class 10/12 marksheet\nIncome certificate\nAdmission letter and fee receipt\nAadhaar and bank account details",
+                'start_date' => now()->subDays(30)->toDateString(),
+                'deadline' => '2026-10-31',
+                'apply_link' => 'https://scholarships.gov.in/',
+            ],
+            [
+                'title' => 'Kotak Kanya Scholarship',
+                'provider' => 'Kotak Education Foundation',
+                'type' => 'private',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Scholarship for meritorious girls from low-income families starting a professional degree at a reputed (NIRF / NAAC accredited) institute.',
+                'eligibility' => "Girl students in the 1st year of a professional degree: Engineering, MBBS, BDS, integrated LLB, Architecture, Design, Pharmacy, BS-MS etc.\nAt least 75% in Class 12.\nAnnual family income less than Rs 6,00,000.",
+                'award_amount' => 150000,
+                'award_frequency' => 'per_year',
+                'benefits' => 'Up to Rs 1.5 lakh per year until graduation for tuition, hostel, books, laptop and other education costs (renewed every year on performance).',
+                'education_levels' => ['undergraduate'],
+                'max_family_income' => 600000,
+                'min_percentage' => 75,
+                'gender' => 'female',
+                'documents_required' => "Class 12 marksheet\nIncome certificate\nAdmission letter and fee structure\nAadhaar and bank account details",
+                'start_date' => '2026-07-14',
+                'deadline' => '2026-09-30',
+                'apply_link' => 'https://www.kotakeducationfoundation.org/kotak-kanya-scholarship',
+            ],
+            [
+                'title' => 'Reliance Foundation Undergraduate Scholarship',
+                'provider' => 'Reliance Foundation',
+                'type' => 'private',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Merit-cum-means scholarship for first-year undergraduate students in any stream, selected through an online aptitude test.',
+                'eligibility' => "1st year of a full-time regular UG degree in India.\nAt least 60% in Class 12.\nAnnual household income less than Rs 15 lakh (preference to income below Rs 2.5 lakh).\nMust take the online aptitude test.",
+                'award_amount' => 200000,
+                'award_frequency' => 'one_time',
+                'benefits' => 'Up to Rs 2 lakh over the duration of the degree, plus access to the Reliance Foundation alumni network.',
+                'education_levels' => ['undergraduate'],
+                'max_family_income' => 1500000,
+                'min_percentage' => 60,
+                'gender' => 'any',
+                'documents_required' => "Class 12 marksheet\nIncome certificate\nAdmission proof\nAadhaar",
+                'start_date' => now()->subDays(15)->toDateString(),
+                'deadline' => $in(30),
+                'apply_link' => 'https://www.scholarships.reliancefoundation.org/UG_Scholarship',
+            ],
+            [
+                'title' => 'HDFC Bank Parivartan ECSS Programme',
+                'provider' => 'HDFC Bank Parivartan',
+                'type' => 'private',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Educational Crisis Scholarship Support for students from Class 1 to postgraduation whose families face financial difficulty.',
+                'eligibility' => "At least 55% in the previous exam.\nAnnual family income not more than Rs 2,50,000.\nPreference to students whose family faced a personal or financial crisis in the last three years.",
+                'award_amount' => null,
+                'award_frequency' => null,
+                'benefits' => "Class 1–6: Rs 15,000 · Class 7–12, Diploma/ITI/Polytechnic: Rs 18,000\nUG general: Rs 30,000 · UG professional: Rs 50,000\nPG general: Rs 35,000 · PG professional: Rs 75,000",
+                'education_levels' => ['high-school', 'diploma', 'undergraduate', 'postgraduate'],
+                'max_family_income' => 250000,
+                'min_percentage' => 55,
+                'gender' => 'any',
+                'documents_required' => "Previous year marksheet\nIncome proof\nAdmission proof / fee receipt\nCrisis proof (if applicable)\nAadhaar and bank account details",
+                'start_date' => now()->subDays(30)->toDateString(),
+                'deadline' => '2026-10-31',
+                'apply_link' => 'https://www.hdfcbankecss.com/',
+            ],
+            [
+                'title' => 'Post-Matric Scholarship for SC Students (Gujarat)',
+                'provider' => 'Social Justice & Empowerment Department, Government of Gujarat',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => 'Government of India post-matric scholarship for Scheduled Caste students, applied for through the Digital Gujarat portal.',
+                'eligibility' => "Scheduled Caste (SC) student, domicile of Gujarat.\nStudying in Class 11 or above (college, ITI, diploma or professional course).\nAnnual family income not more than Rs 2,50,000.",
+                'award_amount' => null,
+                'award_frequency' => null,
+                'benefits' => "Maintenance allowance of Rs 250 – 1,200 per month depending on course and hostel status.\nReimbursement of tuition and compulsory fees as per government norms.",
+                'education_levels' => ['high-school', 'diploma', 'undergraduate', 'postgraduate', 'phd'],
+                'max_family_income' => 250000,
+                'gender' => 'any',
+                'social_categories' => ['sc'],
+                'state' => 'Gujarat',
+                'documents_required' => "Caste certificate\nIncome certificate\nPrevious marksheet\nFee receipt\nAadhaar and bank account details",
+                'start_date' => now()->subDays(45)->toDateString(),
+                'deadline' => '2026-09-30',
+                'apply_link' => 'https://www.digitalgujarat.gov.in/',
+            ],
+            [
+                'title' => 'INSPIRE Scholarship for Higher Education (INSPIRE-SHE)',
+                'provider' => 'Department of Science & Technology, Government of India',
+                'type' => 'government',
+                'university_id' => null,
+                'institute_id' => null,
+                'description' => '10,000 scholarships every year for top students who choose to study natural and basic sciences at BSc / integrated MSc level.',
+                'eligibility' => "Top 1% in Class 12 of your board (or a JEE Advanced / NEET top-10,000 rank, or other notified merit criteria).\nPursuing BSc, BS or integrated MS/MSc in natural and basic sciences.\nAge 17–22 years.",
+                'award_amount' => 80000,
+                'award_frequency' => 'per_year',
+                'benefits' => 'Rs 80,000 per year (Rs 60,000 scholarship + Rs 20,000 summer research mentorship grant) for up to 5 years.',
+                'education_levels' => ['undergraduate', 'postgraduate'],
+                'max_family_income' => null,
+                'gender' => 'any',
+                'documents_required' => "Class 12 marksheet\nEligibility certificate from the board (top 1%)\nCollege bonafide certificate\nBank account details",
+                'start_date' => now()->subDays(20)->toDateString(),
+                'deadline' => $in(50),
+                'apply_link' => 'https://online-inspire.gov.in/',
+            ],
+        ];
+    }
+
+    /** Eligibility rules for the demo university / institute scholarships */
+    private function demoRules(): array
+    {
+        $ugpg = ['undergraduate', 'postgraduate'];
+
+        return [
+            'IIT Bombay Institute Scholarship' => ['education_levels' => ['undergraduate']],
+            'St. Stephen\'s College Merit Scholarship' => ['education_levels' => ['undergraduate']],
+            'GTU Merit Scholarship for Engineering Undergraduates' => ['education_levels' => ['undergraduate']],
+            'LDCE Alumni Association Scholarship' => ['education_levels' => ['undergraduate'], 'max_family_income' => 600000],
+            'CHARUSAT Merit Scholarship' => ['education_levels' => $ugpg],
+            'CHARUSAT Need-Based Assistance' => ['education_levels' => $ugpg, 'max_family_income' => 600000],
+            'CSPIT Excellence Scholarship' => ['education_levels' => ['undergraduate']],
+            'CHARUSAT Sports Excellence Scholarship' => ['education_levels' => $ugpg],
+            'CHARUSAT Alumni Scholarship' => ['education_levels' => $ugpg, 'max_family_income' => 600000],
+            'CHARUSAT Girl Child Scholarship' => ['education_levels' => $ugpg, 'gender' => 'female'],
+            'CHARUSAT EWS Tuition Fee Waiver' => ['education_levels' => $ugpg, 'social_categories' => ['ews'], 'max_family_income' => 800000],
+            'CHARUSAT Hostel Fee Concession' => ['education_levels' => $ugpg, 'max_family_income' => 600000],
+            'CHARUSAT Research Seed Grant (UG/PG)' => ['education_levels' => $ugpg],
+            'CHARUSAT PG Teaching Assistantship' => ['education_levels' => ['postgraduate']],
+            'CHARUSAT Doctoral Fellowship (PhD)' => ['education_levels' => ['phd']],
+            'International Conference Travel Grant (Students)' => ['education_levels' => ['undergraduate', 'postgraduate', 'phd']],
+            'CHARUSAT Student Startup Seed Support' => ['education_levels' => $ugpg],
+            'RPCP Merit Scholarship' => ['education_levels' => $ugpg],
+            'RPCP Need-Based Scholarship' => ['education_levels' => $ugpg, 'max_family_income' => 600000],
+            'CSPIT Innovation Project Grant' => ['education_levels' => ['undergraduate']],
+        ];
+    }
+
+    /** Demo students get profile details so eligibility matching can be tried straight away */
+    private function seedStudentProfiles(): void
+    {
+        $profiles = [
+            'john.doe@example.com' => ['annual_family_income' => 300000, 'gender' => 'male', 'state' => 'Maharashtra', 'social_category' => 'general', 'previous_percentage' => 88],
+            'jane.smith@example.com' => ['annual_family_income' => 550000, 'gender' => 'female', 'state' => 'Delhi', 'social_category' => 'obc', 'previous_percentage' => 82],
+            'mike.johnson@example.com' => ['annual_family_income' => 200000, 'gender' => 'male', 'state' => 'Gujarat', 'social_category' => 'sc', 'previous_percentage' => 84],
+        ];
+
+        foreach ($profiles as $email => $data) {
+            $user = User::where('email', $email)->first();
+            if (!$user) {
+                continue;
+            }
+            if ($user->institute_id && !$user->university_id) {
+                $user->update(['university_id' => Institute::whereKey($user->institute_id)->value('university_id')]);
+            }
+            \App\Models\Profile::firstOrCreate(['user_id' => $user->id], $data);
+        }
     }
 }

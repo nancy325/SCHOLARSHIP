@@ -5,9 +5,19 @@ import {
   Calendar,
   ExternalLink,
   ChevronRight,
+  Search,
+  Star,
 } from "lucide-react";
 import { apiService } from "@/services/api";
 import { useLocation } from "react-router-dom";
+import { useScholarshipFavorites } from "@/hooks/useScholarshipFavorites";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Scholarship type for type safety
 type Scholarship = {
@@ -24,46 +34,23 @@ type Scholarship = {
   created_at: string;
 };
 
-// Tab&Button options based on image
-const tabOptions = [
-  { value: "categories", label: "Categories" },
-  { value: "state", label: "State" },
-  { value: "class", label: "Current Class" },
-  { value: "type", label: "Type" },
-  { value: "international", label: "International" },
-  { value: "government", label: "Government" },
-];
-
-const categoryFilters = [
-  { value: "girls", label: "Girls" },
-  { value: "scstobc", label: "SC/ST/OBC" },
-  { value: "minority", label: "Minority" },
-  { value: "disabled", label: "Physically Disabled" },
-];
-
-const quickFilters = [
-  { value: "", label: "All Scholarships" },
-  { value: "live", label: "Live Application Form" },
- ];
-
-// Utility badge for type (unchanged)
 const getTypeBadge = (type: string) => {
   const badges: Record<string, { label: string; className: string }> = {
     government: {
       label: "Government",
-      className: "bg-blue-100 text-blue-700",
+      className: "bg-emerald-50 text-emerald-800",
     },
     private: {
       label: "Private",
-      className: "bg-purple-100 text-purple-700",
+      className: "bg-amber-50 text-amber-900",
     },
     university: {
       label: "University",
-      className: "bg-green-100 text-green-700",
+      className: "bg-sky-50 text-sky-800",
     },
     institute: {
       label: "Institute",
-      className: "bg-orange-100 text-orange-700",
+      className: "bg-rose-50 text-rose-800",
     },
   };
   const badge =
@@ -92,18 +79,19 @@ const getDaysLeft = (deadline: string | null | undefined): string => {
 };
 
 const SearchAndApply = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTab, setSelectedTab] = useState("categories");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState(
+    () => new URLSearchParams(location.search).get("search") ?? ""
+  );
   const [selectedType, setSelectedType] = useState<string>("");
-  const [quickFilter, setQuickFilter] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  const location = useLocation();
+  const [retryCount, setRetryCount] = useState(0);
+  const [selectedScholarship, setSelectedScholarship] = useState<Scholarship | null>(null);
+  const { isFavorite, toggleFavorite } = useScholarshipFavorites();
 
   // API fetch scholarships
   useEffect(() => {
@@ -115,10 +103,8 @@ const SearchAndApply = () => {
         page: currentPage,
         per_page: 12,
       };
-      if (searchQuery) params.search = searchQuery;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
       if (selectedType) params.type = selectedType;
-      if (selectedCategory) params.category = selectedCategory;
-      if (quickFilter) params.quick = quickFilter;
       try {
         const res = await apiService.getScholarships(params);
         if (isMounted && res.success && res.data) {
@@ -129,6 +115,10 @@ const SearchAndApply = () => {
             setTotalPages(data.last_page || 1);
           } else if (Array.isArray(data)) {
             setScholarships(data);
+            setCurrentPage(1);
+            setTotalPages(1);
+          } else {
+            setScholarships([]);
             setCurrentPage(1);
             setTotalPages(1);
           }
@@ -148,13 +138,11 @@ const SearchAndApply = () => {
     return () => {
       isMounted = false;
     };
-    // eslint-disable-next-line
   }, [
     currentPage,
     searchQuery,
     selectedType,
-    selectedCategory,
-    quickFilter,
+    retryCount,
   ]);
 
   const onSearchSubmit = (e: React.FormEvent) => {
@@ -162,7 +150,6 @@ const SearchAndApply = () => {
     setCurrentPage(1); // Reset page for new search
   };
 
-  // Scholarships list (unchanged except margin moved lower)
   const renderScholarships = () => {
     if (loading) {
       return (
@@ -186,8 +173,8 @@ const SearchAndApply = () => {
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center mt-8">
           <p className="text-red-600 font-medium">{error}</p>
           <button
-            onClick={() => window.location.reload()}
-            className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+            onClick={() => setRetryCount((count) => count + 1)}
+            className="mt-4 text-primary hover:underline font-medium"
           >
             Try Again
           </button>
@@ -223,7 +210,7 @@ const SearchAndApply = () => {
                     <div className="flex items-center gap-2 mb-2">
                       {getTypeBadge(scholarship.type)}
                     </div>
-                    <h3 className="font-bold text-gray-800 text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                    <h3 className="font-bold text-gray-800 text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
                       {scholarship.title}
                     </h3>
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
@@ -259,20 +246,34 @@ const SearchAndApply = () => {
                   <span className="text-xs text-gray-500">
                     {new Date(scholarship.created_at).toLocaleDateString()}
                   </span>
-                  {scholarship.apply_link ? (
-                    <a
-                      href={scholarship.apply_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleFavorite(scholarship)}
+                      aria-label={isFavorite(scholarship.id) ? "Remove from favorites" : "Add to favorites"}
+                      title={isFavorite(scholarship.id) ? "Remove from favorites" : "Add to favorites"}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      Apply <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm">
-                      View Details <ChevronRight className="w-4 h-4" />
+                      <Star className={`h-4 w-4 ${isFavorite(scholarship.id) ? "fill-current" : ""}`} />
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedScholarship(scholarship)}
+                      className="flex items-center gap-1 text-primary hover:underline font-medium text-sm"
+                    >
+                      Details <ChevronRight className="w-4 h-4" />
+                    </button>
+                    {scholarship.apply_link && (
+                      <a
+                        href={scholarship.apply_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-primary hover:underline font-medium text-sm"
+                      >
+                        Apply <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -303,124 +304,99 @@ const SearchAndApply = () => {
     );
   };
 
-  // Tab content (demo version for the shown mockup -- only using category tab for now)
-  const renderTabContent = () => {
-    switch (selectedTab) {
-      case "categories":
-        return (
-          <div className="flex flex-wrap gap-3 mt-3">
-            {categoryFilters.map((cat) => (
-              <button
-                key={cat.value}
-                className={`px-5 py-2 rounded-lg border text-base font-medium min-w-[160px] transition ${
-                  selectedCategory === cat.value
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-blue-50"
-                }`}
-                onClick={() => {
-                  setSelectedCategory(cat.value === selectedCategory ? null : cat.value);
-                  setCurrentPage(1);
-                }}
-                type="button"
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        );
-      case "type":
-      case "government":
-      case "international":
-        // Future: Implement further filter tab UIs as needed
-        return (
-          <div className="text-gray-500 mt-4 px-2 py-2">
-            (Filter coming soon)
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  // Main Render
   return (
-    <div className="max-w-4xl mx-auto px-3 py-10">
-      {/* Section: Title */}
-      <div className="mb-2">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-          Search and Filter
-        </h2>
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-primary">Find your next opportunity</p>
+          <h2 className="mt-1 text-3xl font-semibold text-foreground">Scholarship directory</h2>
+        </div>
+        <p className="max-w-md text-sm text-muted-foreground">Search current listings and narrow results by the scholarship provider.</p>
       </div>
-      {/* Section: Search + Quick Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-        <form onSubmit={onSearchSubmit}>
+      <div className="mb-6 grid gap-4 rounded-lg border border-border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_220px_auto] sm:items-end">
+        <form onSubmit={onSearchSubmit} className="space-y-2">
+          <label htmlFor="scholarship-search" className="text-sm font-medium text-foreground">Search scholarships</label>
+          <div className="flex gap-2">
           <input
+            id="scholarship-search"
             type="text"
-            className="w-full px-4 py-2 mb-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Search Scholarships of any State/Gender/Class"
+            className="h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            placeholder="Search by name or keyword"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
           />
-        </form>
-        {/* Quick Filters */}
-        <div className="flex flex-wrap gap-2 mb-1">
-          {quickFilters.map((btn) => (
-            <button
-              key={btn.value}
-              className={`px-4 py-1.5 rounded border text-sm font-medium ${
-                quickFilter === btn.value
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-blue-50"
-              }`}
-              onClick={() => {
-                setQuickFilter(btn.value);
-                setCurrentPage(1);
-              }}
-              type="button"
-            >
-              {btn.label}
+            <button type="submit" aria-label="Search scholarships" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90">
+              <Search className="h-4 w-4" />
             </button>
-          ))}
-        </div>
-      </div>
-      {/* Section: Informational (optional, mimic visual) */}
-      <div className="text-gray-700 text-sm mb-2 font-medium">
-        Select the scholarship according to your need and preference
-      </div>
-      {/* Tabs for filtering */}
-      <div className="flex flex-wrap gap-2 mb-2">
-        {tabOptions.map((tab) => (
-          <button
-            key={tab.value}
-            className={`px-4 py-2 rounded border text-sm font-semibold ${
-              selectedTab === tab.value
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-blue-50"
-            }`}
-            type="button"
-            onClick={() => {
-              setSelectedTab(tab.value);
-              setSelectedCategory(null);
+          </div>
+        </form>
+        <label className="space-y-2 text-sm font-medium text-foreground">
+          Provider type
+          <select
+            value={selectedType}
+            onChange={(event) => {
+              setSelectedType(event.target.value);
               setCurrentPage(1);
-              // For demo, only switch to type tab will set type
-              if (tab.value === "type" || tab.value === "government" || tab.value === "international") {
-                setSelectedType(tab.value === "type" ? "" : tab.value);
-              } else {
-                setSelectedType("");
-              }
             }}
+            className="block h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {tab.label}
-          </button>
-        ))}
+            <option value="">All providers</option>
+            <option value="government">Government</option>
+            <option value="private">Private</option>
+            <option value="university">University</option>
+            <option value="institute">Institute</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            setSearchQuery("");
+            setSelectedType("");
+            setCurrentPage(1);
+          }}
+          disabled={!searchQuery && !selectedType}
+          className="h-11 rounded-md px-3 text-sm font-medium text-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Clear filters
+        </button>
       </div>
-      {/* Subfilters / content under tab */}
-      {renderTabContent()}
-      {/* Scholarships cards */}
+      <div className="mb-2 text-sm text-muted-foreground">
+        {selectedType ? `Showing ${selectedType} scholarships` : "Browse all available scholarships"}
+        {searchQuery.trim() ? ` matching “${searchQuery.trim()}”` : ""}
+      </div>
       {renderScholarships()}
+      <Dialog open={Boolean(selectedScholarship)} onOpenChange={(open) => !open && setSelectedScholarship(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+          {selectedScholarship && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedScholarship.title}</DialogTitle>
+                <DialogDescription>{selectedScholarship.type} scholarship</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 text-sm text-foreground">
+                <p className="whitespace-pre-wrap text-muted-foreground">{selectedScholarship.description || "No description is available yet."}</p>
+                {selectedScholarship.eligibility && (
+                  <div>
+                    <h3 className="font-semibold">Eligibility</h3>
+                    <p className="mt-1 text-muted-foreground">{selectedScholarship.eligibility}</p>
+                  </div>
+                )}
+                {selectedScholarship.deadline && (
+                  <p className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /> Deadline: {selectedScholarship.deadline}</p>
+                )}
+                {selectedScholarship.apply_link && (
+                  <a href={selectedScholarship.apply_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90">
+                    Visit application <ExternalLink className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -121,10 +121,16 @@ class ApiService {
     password_confirmation: string;
     category: string;
   }): Promise<ApiResponse<AuthResponse>> {
-    return this.request<AuthResponse>('/auth/register', {
+    const response = await this.request<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+
+    if (response.success && response.data?.token) {
+      this.setAuthToken(response.data.token);
+    }
+
+    return response;
   }
 
   async login(credentials: {

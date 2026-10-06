@@ -86,8 +86,6 @@ const Profile = () => {
     if (!form.category) newErrors.category = "Select category";
     if (!form.phone.match(/^\d{10}$/))
       newErrors.phone = "Phone must be 10 digits";
-    if (form.annualIncome && isNaN(Number(form.annualIncome)))
-      newErrors.annualIncome = "Income must be a number";
     if (
       form.prevPercentage &&
       (Number(form.prevPercentage) < 0 || Number(form.prevPercentage) > 100)
@@ -132,36 +130,30 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-96">
-        <div className="text-blue-700 text-lg">Loading profile...</div>
+      <div role="status" className="flex h-96 items-center justify-center text-sm text-muted-foreground">
+        Loading profile...
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center py-12 px-4">
-      <div className="max-w-3xl w-full bg-white/90 rounded-2xl shadow-lg p-8">
-        <h2 className="text-2xl font-bold mb-6 text-blue-900">Student Profile</h2>
+    <div className="flex justify-center px-4 py-8 sm:px-6">
+      <div className="w-full max-w-5xl rounded-lg border border-border bg-card p-5 shadow-sm sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary">Student workspace</p>
+        <h2 className="mb-6 mt-1 text-3xl font-semibold text-foreground">Profile</h2>
         {apiError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <p className="text-red-700 text-center">{apiError}</p>
+          <div role="alert" className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-4">
+            <p className="text-sm text-destructive">{apiError}</p>
           </div>
         )}
         {successMsg && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-            <p className="text-green-700 text-center">{successMsg}</p>
-          </div>
-        )}
-        {!editMode && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-blue-800 text-center">
-              Click the "Edit" button to update your profile information, including dropdown selections.
-            </p>
+          <div role="status" className="mb-4 rounded-md border border-secondary/40 bg-secondary/10 p-4">
+            <p className="text-sm text-foreground">{successMsg}</p>
           </div>
         )}
         <form onSubmit={handleSave} className="space-y-6">
           {/* ---------- Personal Info ---------- */}
-          <h3 className="text-lg font-semibold text-blue-800 border-b pb-1">Personal Information</h3>
+          <h3 className="border-b border-border pb-2 text-lg font-semibold text-foreground">Personal Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { label: "Full Name", name: "name", type: "text" },
@@ -170,8 +162,9 @@ const Profile = () => {
               { label: "Email", name: "email", type: "email" },
             ].map((field) => (
               <div key={field.name}>
-                <label className="block text-blue-800 font-medium mb-1">{field.label}</label>
+                <label htmlFor={`profile-${field.name}`} className="mb-1 block text-sm font-medium text-foreground">{field.label}</label>
                 <input
+                  id={`profile-${field.name}`}
                   type={field.type}
                   name={field.name}
                   value={
@@ -181,25 +174,26 @@ const Profile = () => {
                   }
                   onChange={handleChange}
                   disabled={!editMode}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 bg-white disabled:bg-gray-100"
+                  className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:bg-muted"
                 />
                 {errors[field.name] && (
-                  <p className="text-red-500 text-sm">{errors[field.name]}</p>
+                  <p role="alert" className="text-sm text-destructive">{errors[field.name]}</p>
                 )}
               </div>
             ))}
 
             {/* Gender */}
             <div>
-              <label className="block text-blue-800 font-medium mb-1">Gender</label>
+              <label htmlFor="profile-gender" className="mb-1 block text-sm font-medium text-foreground">Gender</label>
               <select
+                id="profile-gender"
                 name="gender"
                 value={editMode ? form.gender : profile.gender}
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option>Male</option>
@@ -213,15 +207,16 @@ const Profile = () => {
 
             {/* Category */}
             <div>
-              <label className="block text-blue-800 font-medium mb-1">Category</label>
+              <label htmlFor="profile-category" className="mb-1 block text-sm font-medium text-foreground">Category</label>
               <select
+                id="profile-category"
                 name="category"
                 value={editMode ? form.category : profile.category}
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option>General</option>
@@ -231,21 +226,22 @@ const Profile = () => {
                 <option>EWS</option>
               </select>
               {errors.category && (
-                <p className="text-red-500 text-sm">{errors.category}</p>
+                  <p role="alert" className="text-sm text-destructive">{errors.category}</p>
               )}
             </div>
 
             {/* Disability */}
             <div>
-              <label className="block text-blue-800 font-medium mb-1">Disability Status</label>
+              <label htmlFor="profile-disability" className="mb-1 block text-sm font-medium text-foreground">Disability status</label>
               <select
+                id="profile-disability"
                 name="disability"
                 value={editMode ? form.disability : profile.disability}
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option>Yes</option>
@@ -255,15 +251,16 @@ const Profile = () => {
 
             {/* state */}
             <div>
-              <label className="block text-blue-800 font-medium mb-1">State</label>
+              <label htmlFor="profile-state" className="mb-1 block text-sm font-medium text-foreground">State</label>
               <select
+                id="profile-state"
                 name="state"
                 value={editMode ? form.state : profile.state}
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option>Andhra Pradesh</option>
@@ -307,20 +304,21 @@ const Profile = () => {
           </div>
 
           {/* ---------- Family Info ---------- */}
-          <h3 className="text-lg font-semibold text-blue-800 border-b pb-1">Family Information</h3>
+          <h3 className="border-b border-border pb-2 text-lg font-semibold text-foreground">Family Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label htmlFor="profile-parent-occupation" className="mb-1 block text-sm font-medium text-foreground">
                 Parent/Guardian Occupation
               </label>
               <select
+                id="profile-parent-occupation"
                 name="parentOccupation"
                 value={editMode ? form.parentOccupation : profile.parentOccupation}
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option value="Government Service">Government Service</option>
@@ -334,17 +332,18 @@ const Profile = () => {
               </select>
             </div>
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label htmlFor="profile-annual-income" className="mb-1 block text-sm font-medium text-foreground">
                 Annual Family Income
               </label>
               <select
+                id="profile-annual-income"
                 name="annualIncome"
                 value={editMode ? form.annualIncome : profile.annualIncome}
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option value="Below 1 Lakh">Below 1 Lakh</option>
@@ -358,52 +357,12 @@ const Profile = () => {
               )}
             </div>
           </div>
-          <h3 className="text-lg font-semibold text-blue-800 border-b pb-1">Family Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-blue-800 font-medium mb-1">
-                Parent/Guardian Occupation
-              </label>
-              <input
-                type="text"
-                name="parentOccupation"
-                value={
-                  editMode
-                    ? form.parentOccupation
-                    : profile.parentOccupation
-                }
-                onChange={handleChange}
-                disabled={!editMode}
-                className="w-full px-4 py-2 border rounded-lg bg-white disabled:bg-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-blue-800 font-medium mb-1">
-                Annual Family Income
-              </label>
-              <input
-                type="text"
-                name="annualIncome"
-                value={
-                  editMode
-                    ? form.annualIncome
-                    : profile.annualIncome
-                }
-                onChange={handleChange}
-                disabled={!editMode}
-                className="w-full px-4 py-2 border rounded-lg bg-white disabled:bg-gray-100"
-              />
-              {errors.annualIncome && (
-                <p className="text-red-500 text-sm">{errors.annualIncome}</p>
-              )}
-            </div>
-          </div>
 
           {/* ---------- Academic Info ---------- */}
-          <h3 className="text-lg font-semibold text-blue-800 border-b pb-1">Academic Information</h3>
+          <h3 className="border-b border-border pb-2 text-lg font-semibold text-foreground">Academic Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Current Course
               </label>
               <select
@@ -412,8 +371,8 @@ const Profile = () => {
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select Course</option>
                 <option>B.Tech (Computer Science)</option>
@@ -436,7 +395,7 @@ const Profile = () => {
               </select>
             </div>
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Year/Semester
               </label>
               <select
@@ -445,8 +404,8 @@ const Profile = () => {
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option>1st Year</option>
@@ -456,7 +415,7 @@ const Profile = () => {
               </select>
             </div>
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Mode of Study
               </label>
               <select
@@ -465,8 +424,8 @@ const Profile = () => {
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option>Regular</option>
@@ -474,7 +433,7 @@ const Profile = () => {
               </select>
             </div>
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Institution
               </label>
               <input
@@ -483,11 +442,11 @@ const Profile = () => {
                 value={editMode ? form.institution : profile.institution}
                 onChange={handleChange}
                 disabled={!editMode}
-                className="w-full px-4 py-2 border rounded-lg bg-white disabled:bg-gray-100"
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm disabled:bg-muted"
               />
             </div>
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Previous Exam %
               </label>
               <input
@@ -500,14 +459,14 @@ const Profile = () => {
                 }
                 onChange={handleChange}
                 disabled={!editMode}
-                className="w-full px-4 py-2 border rounded-lg bg-white disabled:bg-gray-100"
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm disabled:bg-muted"
               />
               {errors.prevPercentage && (
-                <p className="text-red-500 text-sm">{errors.prevPercentage}</p>
+                  <p role="alert" className="text-sm text-destructive">{errors.prevPercentage}</p>
               )}
             </div>
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Current CGPA
               </label>
               <input
@@ -516,19 +475,19 @@ const Profile = () => {
                 value={editMode ? form.cgpa : profile.cgpa}
                 onChange={handleChange}
                 disabled={!editMode}
-                className="w-full px-4 py-2 border rounded-lg bg-white disabled:bg-gray-100"
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm disabled:bg-muted"
               />
               {errors.cgpa && (
-                <p className="text-red-500 text-sm">{errors.cgpa}</p>
+                  <p role="alert" className="text-sm text-destructive">{errors.cgpa}</p>
               )}
             </div>
           </div>
 
           {/* ---------- Other Info ---------- */}
-          <h3 className="text-lg font-semibold text-blue-800 border-b pb-1">Other Information</h3>
+          <h3 className="border-b border-border pb-2 text-lg font-semibold text-foreground">Other Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Already on Scholarship?
               </label>
               <select
@@ -537,8 +496,8 @@ const Profile = () => {
                 onChange={handleChange}
                 disabled={!editMode}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  editMode ? "bg-white" : "bg-gray-100 cursor-not-allowed"
-                } focus:ring-2 focus:ring-blue-400`}
+                  editMode ? "bg-background" : "bg-muted cursor-not-allowed"
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               >
                 <option value="">Select</option>
                 <option>Yes</option>
@@ -546,7 +505,7 @@ const Profile = () => {
               </select>
             </div>
             <div>
-              <label className="block text-blue-800 font-medium mb-1">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Career Goal (optional)
               </label>
               <input
@@ -555,7 +514,7 @@ const Profile = () => {
                 value={editMode ? form.careerGoal : profile.careerGoal}
                 onChange={handleChange}
                 disabled={!editMode}
-                className="w-full px-4 py-2 border rounded-lg bg-white disabled:bg-gray-100"
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm disabled:bg-muted"
               />
             </div>
           </div>
@@ -566,15 +525,15 @@ const Profile = () => {
               <>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                  className="h-10 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
                   disabled={saving}
                 >
                   {saving ? "Saving..." : "Save"}
                 </button>
                 <button
                   type="button"
-                  className="bg-gray-300 text-blue-900 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 transition"
-                  onClick={() => setEditMode(false)}
+                  className="h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                  onClick={() => { setEditMode(false); setForm(profile); setErrors({}); }}
                   disabled={saving}
                 >
                   Cancel
@@ -583,7 +542,7 @@ const Profile = () => {
             ) : (
               <button
                 type="button"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                className="h-10 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 onClick={handleEdit}
               >
                 Edit

@@ -59,25 +59,26 @@ export const AdminLayout = ({
   const filteredNavItems = navItems.filter(item => !item.roles || item.roles.includes(role));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/60 text-slate-900">
-      <div className="fixed top-0 left-0 right-0 z-40 shadow-sm bg-white/90 backdrop-blur">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="fixed left-0 right-0 top-0 z-40 bg-card/95 shadow-sm backdrop-blur">
         <Header 
           variant="admin"
           sidebarOpen={sidebarOpen}
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+          adminNavItems={filteredNavItems.map(({ label, path }) => ({ label, path }))}
         />
       </div>
 
       <div className="flex flex-1 pt-16 pb-16">
         <aside
           aria-label="Admin navigation"
-          className={`fixed inset-y-16 left-0 z-30 w-72 bg-white/95 backdrop-blur border-r border-gray-100 shadow-lg transform transition-transform duration-200 md:static md:translate-x-0 ${
+          className={`fixed inset-y-16 left-0 z-30 w-72 transform border-r border-sidebar-border bg-sidebar shadow-lg backdrop-blur transition-transform duration-200 md:static md:translate-x-0 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
         >
           <div className="p-4 space-y-3">
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Admin</h3>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin</h3>
               <div className="space-y-1">
                 {filteredNavItems.map(({ tab, label, icon: Icon, path }) => {
                   const isActive = activePath
@@ -87,10 +88,10 @@ export const AdminLayout = ({
                     <Button
                       key={tab}
                       variant="ghost"
-                      className={`w-full justify-start gap-3 text-sm transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+                      className={`w-full justify-start gap-3 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-[0_4px_12px_rgba(59,130,246,0.12)]'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90'
+                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                       }`}
                       onClick={() => {
                         onTabChange?.(tab);
@@ -100,7 +101,7 @@ export const AdminLayout = ({
                       }}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-foreground">
                         <Icon className="h-4 w-4" />
                       </span>
                       <span className="truncate">{label}</span>
@@ -120,12 +121,12 @@ export const AdminLayout = ({
           />
         )}
 
-        <main className="flex-1 overflow-auto md:ml-0 pt-4 md:pt-6 px-4 md:px-8">
+        <main className="flex-1 overflow-auto px-4 pt-4 md:px-8 md:pt-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="space-y-1">
-              <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+              <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
               {description && (
-                <p className="text-gray-600">{description}</p>
+                <p className="text-muted-foreground">{description}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -135,7 +136,7 @@ export const AdminLayout = ({
         </main>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-gray-100 bg-white/95 backdrop-blur">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur">
         <Footer className="py-4 text-sm" />
       </div>
     </div>

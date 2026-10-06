@@ -50,6 +50,20 @@ class ScholarshipService
     }
 
     /**
+     * Base query of active scholarships the given user (or guest) is allowed to see.
+     */
+    public function visibleQuery(?User $user = null): Builder
+    {
+        $query = Scholarship::query()
+            ->with(['university:id,name', 'institute:id,name'])
+            ->where('RecStatus', 'active');
+
+        $this->applyRoleScoping($query, $user);
+
+        return $query;
+    }
+
+    /**
      * Get a single scholarship by ID
      *
      * @param int $id
@@ -137,7 +151,7 @@ class ScholarshipService
      * @param User|null $user
      * @return void
      */
-    private function applyRoleScoping(Builder $query, ?User $user): void
+    public function applyRoleScoping(Builder $query, ?User $user): void
     {
         if (!$user) {
             // Public: only government and private scholarships

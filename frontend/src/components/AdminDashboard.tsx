@@ -9,7 +9,6 @@ import {
   BarChart3, 
   Settings, 
   Home,
-  TrendingUp,
   ChevronRight,
   School,
   Plus,
@@ -17,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import UserManagement from './admin/UserManagement';
 import InstituteManagement from './admin/InstituteManagement';
@@ -30,6 +28,7 @@ import CreateUniversity from '@/pages/CreateUniversity';
 import CreateScholarship from '@/pages/CreateScholarship';
 import CreateUser from '@/pages/CreateUser';
 import CreateInstitute from '@/pages/CreateInstitute';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -100,29 +99,30 @@ const AdminDashboard = () => {
     {
       title: 'Total Users',
       value: dashboardStats.total_users?.toLocaleString() || '0',
-      change: '+12%',
-      changeType: 'positive',
       icon: Users,
-      description: 'Active users this month',
-      color: 'bg-blue-100 text-blue-600'
+      description: 'Registered accounts',
+      color: 'bg-primary/10 text-primary'
     },
-    // {
-    //   title: 'Registered Institutes',
-    //   value: dashboardStats.total_institutes?.toLocaleString() || '0',
-    //   change: '+8%',
-    //   changeType: 'positive',
-    //   icon: Building2,
-    //   description: 'Partner institutions',
-    //   color: 'bg-green-100 text-green-600'
-    // },
     {
       title: 'Active Scholarships',
       value: dashboardStats.active_scholarships?.toLocaleString() || '0',
-      change: '+23%',
-      changeType: 'positive',
       icon: GraduationCap,
-      description: 'Available opportunities',
-      color: 'bg-purple-100 text-purple-600'
+      description: 'With a current deadline',
+      color: 'bg-secondary/25 text-foreground'
+    },
+    {
+      title: 'Institutes',
+      value: dashboardStats.total_institutes?.toLocaleString() || '0',
+      icon: Building2,
+      description: 'Registered institutions',
+      color: 'bg-accent text-accent-foreground'
+    },
+    {
+      title: 'Universities',
+      value: dashboardStats.total_universities?.toLocaleString() || '0',
+      icon: School,
+      description: 'Registered universities',
+      color: 'bg-muted text-foreground'
     }
   ] : [];
 
@@ -214,31 +214,19 @@ const OverviewSection = ({ stats, loading, recentActivity, onQuickNav }: Overvie
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05, duration: 0.25 }}
         >
-          <Card className="overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="overflow-hidden border border-border shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-full ${stat.color}`}>
+              <div className={`rounded-md p-2 ${stat.color}`}>
                 <stat.icon className="h-4 w-4" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-2xl font-semibold text-foreground">{stat.value}</div>
+              <div className="mt-1 text-xs text-muted-foreground">
                 {stat.description}
-              </div>
-              <div className="flex items-center pt-3">
-                <Badge 
-                  variant={stat.changeType === 'positive' ? 'default' : 'destructive'}
-                  className={stat.changeType === 'positive' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}
-                >
-                  {stat.changeType === 'positive' ? (
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                  ) : null}
-                  {stat.change}
-                </Badge>
-                <span className="text-xs text-gray-500 ml-2">from last month</span>
               </div>
             </CardContent>
           </Card>
@@ -247,7 +235,7 @@ const OverviewSection = ({ stats, loading, recentActivity, onQuickNav }: Overvie
     </div>
 
     <div className="grid gap-6 md:grid-cols-2">
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Recent Activity</CardTitle>
           <CardDescription>Latest actions in the system</CardDescription>
@@ -260,16 +248,16 @@ const OverviewSection = ({ stats, loading, recentActivity, onQuickNav }: Overvie
               </div>
             ) : recentActivity.length > 0 ? (
               recentActivity.slice(0, 4).map((item, index) => (
-                <div key={index} className="flex items-center justify-between py-2 group">
+                  <div key={item.created_at || `${item.type}-${index}`} className="group flex items-center justify-between py-2">
                   <div className="flex items-center space-x-3">
                     <div className={`w-2 h-2 rounded-full ${
-                      item.type === 'user' ? 'bg-blue-500' :
-                      item.type === 'institute' ? 'bg-green-500' :
-                      item.type === 'scholarship' ? 'bg-purple-500' : 'bg-amber-500'
+                      item.type === 'user' ? 'bg-primary' :
+                      item.type === 'institute' ? 'bg-secondary' :
+                      item.type === 'scholarship' ? 'bg-accent-foreground' : 'bg-muted-foreground'
                     }`} />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{item.action}</p>
-                      <p className="text-xs text-gray-500">{item.time}</p>
+                      <p className="text-sm font-medium text-foreground">{item.action}</p>
+                      <p className="text-xs text-muted-foreground">{item.time}</p>
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
@@ -281,13 +269,13 @@ const OverviewSection = ({ stats, loading, recentActivity, onQuickNav }: Overvie
               </div>
             )}
           </div>
-          <Button variant="ghost" className="w-full mt-4 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+          <Button variant="ghost" onClick={() => onQuickNav('/admin-dashboard/analytics', 'analytics')} className="mt-4 w-full text-primary hover:bg-primary/5">
             View all activity
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Quick Actions</CardTitle>
           <CardDescription>Common administrative tasks</CardDescription>
@@ -296,41 +284,41 @@ const OverviewSection = ({ stats, loading, recentActivity, onQuickNav }: Overvie
           <div className="space-y-3">
             <Button 
               variant="outline" 
-              className="w-full justify-start h-11 border-gray-200 hover:border-blue-200 hover:bg-blue-50 group" 
+              className="group h-11 w-full justify-start border-border hover:border-primary/30 hover:bg-primary/5" 
               onClick={() => onQuickNav('/admin-dashboard/users/create', 'users')}
             >
-              <div className="rounded-full bg-blue-100 p-1.5 mr-3 group-hover:bg-blue-200">
-                <Plus className="h-4 w-4 text-blue-600" />
+              <div className="mr-3 rounded-md bg-primary/10 p-1.5 group-hover:bg-primary/15">
+                <Plus className="h-4 w-4 text-primary" />
               </div>
               Add New User
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start h-11 border-gray-200 hover:border-green-200 hover:bg-green-50 group" 
+              className="group h-11 w-full justify-start border-border hover:border-secondary/50 hover:bg-secondary/10" 
               onClick={() => onQuickNav('/admin-dashboard/institutes/create', 'institutes')}
             >
-              <div className="rounded-full bg-green-100 p-1.5 mr-3 group-hover:bg-green-200">
-                <Plus className="h-4 w-4 text-green-600" />
+              <div className="mr-3 rounded-md bg-secondary/25 p-1.5 group-hover:bg-secondary/35">
+                <Plus className="h-4 w-4 text-foreground" />
               </div>
               Register Institute
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start h-11 border-gray-200 hover:border-purple-200 hover:bg-purple-50 group" 
+              className="group h-11 w-full justify-start border-border hover:border-accent/80 hover:bg-accent" 
               onClick={() => onQuickNav('/admin-dashboard/scholarships/create', 'scholarships')}
             >
-              <div className="rounded-full bg-purple-100 p-1.5 mr-3 group-hover:bg-purple-200">
-                <Plus className="h-4 w-4 text-purple-600" />
+              <div className="mr-3 rounded-md bg-accent p-1.5 group-hover:bg-accent/80">
+                <Plus className="h-4 w-4 text-accent-foreground" />
               </div>
               Create Scholarship
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start h-11 border-gray-200 hover:border-amber-200 hover:bg-amber-50 group" 
+              className="group h-11 w-full justify-start border-border hover:border-muted-foreground/30 hover:bg-muted" 
               onClick={() => onQuickNav('/admin-dashboard/analytics', 'analytics')}
             >
-              <div className="rounded-full bg-amber-100 p-1.5 mr-3 group-hover:bg-amber-200">
-                <BarChart3 className="h-4 w-4 text-amber-600" />
+              <div className="mr-3 rounded-md bg-muted p-1.5 group-hover:bg-muted/80">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </div>
               View Reports
             </Button>
@@ -346,67 +334,176 @@ type FormProps = {
   mode: 'create' | 'edit';
 };
 
+const editFields: Record<string, Array<{ name: string; label: string; type?: string; required?: boolean; options?: string[] }>> = {
+  User: [
+    { name: 'name', label: 'Full name', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'role', label: 'Role', type: 'select', options: ['student', 'institute_admin', 'university_admin', 'admin'], required: true },
+    { name: 'category', label: 'Education category' },
+    { name: 'RecStatus', label: 'Status', type: 'select', options: ['active', 'inactive'], required: true },
+  ],
+  Institute: [
+    { name: 'name', label: 'Institute name', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'phone', label: 'Phone', type: 'tel' },
+    { name: 'website', label: 'Website', type: 'url' },
+    { name: 'address', label: 'Address' },
+    { name: 'description', label: 'Description', type: 'textarea' },
+  ],
+  Scholarship: [
+    { name: 'title', label: 'Scholarship title', required: true },
+    { name: 'type', label: 'Provider type', type: 'select', options: ['government', 'private', 'university', 'institute'], required: true },
+    { name: 'deadline', label: 'Deadline', type: 'date' },
+    { name: 'apply_link', label: 'Application link', type: 'url' },
+    { name: 'description', label: 'Description', type: 'textarea' },
+    { name: 'eligibility', label: 'Eligibility', type: 'textarea' },
+  ],
+};
+
 const EntityForm = ({ entity, mode }: FormProps) => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const isEdit = mode === 'edit';
+  const fields = editFields[entity] ?? [];
+  const section = entity === 'Institute' ? 'institutes' : `${entity.toLowerCase()}s`;
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(isEdit);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isEdit || !id) return;
+    let mounted = true;
+
+    const loadEntity = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const entityId = Number(id);
+        const response = entity === 'User'
+          ? await apiService.getUser(entityId)
+          : entity === 'Institute'
+            ? await apiService.getInstitute(entityId)
+            : await apiService.getScholarship(entityId);
+        if (!response.success) throw new Error(response.message || `Could not load ${entity.toLowerCase()}.`);
+        const record = (response.data as any)?.data ?? response.data ?? {};
+        if (mounted) {
+          setFormData(Object.fromEntries(fields.map((field) => {
+            const value = String(record[field.name] ?? '');
+            return [field.name, field.type === 'date' ? value.slice(0, 10) : value];
+          })));
+        }
+      } catch (loadError: any) {
+        if (mounted) setError(loadError?.message || `Could not load ${entity.toLowerCase()}.`);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadEntity();
+    return () => { mounted = false; };
+  }, [entity, fields, id, isEdit]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!id || !isEdit) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const payload = Object.fromEntries(Object.entries(formData).filter(([, value]) => value !== ''));
+      const entityId = Number(id);
+      const response = entity === 'User'
+        ? await apiService.updateUser(entityId, payload)
+        : entity === 'Institute'
+          ? await apiService.updateInstitute(entityId, payload)
+          : await apiService.updateScholarship(entityId, payload);
+      if (!response.success) throw new Error(response.message || `Could not save ${entity.toLowerCase()}.`);
+      toast({ title: 'Changes saved', description: `${entity} details were updated.` });
+      navigate(`/admin-dashboard/${section}`);
+    } catch (saveError: any) {
+      setError(saveError?.response?.data?.message || saveError?.message || `Could not save ${entity.toLowerCase()}.`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <p role="status" className="py-12 text-center text-sm text-muted-foreground">Loading {entity.toLowerCase()}…</p>;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card className="border-0 shadow-sm">
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+      <Card className="border border-border shadow-sm">
         <CardHeader className="space-y-1">
           <CardTitle className="text-lg flex items-center gap-2">
-            {isEdit ? <Pencil className="h-4 w-4 text-indigo-600" /> : <Plus className="h-4 w-4 text-indigo-600" />}
+            {isEdit ? <Pencil className="h-4 w-4 text-primary" /> : <Plus className="h-4 w-4 text-primary" />}
             {isEdit ? `Edit ${entity}` : `Create ${entity}`}
           </CardTitle>
           <CardDescription>
-            {isEdit ? `Update ${entity.toLowerCase()} details` : `Add a new ${entity.toLowerCase()}`}
+            {isEdit ? `Update ${entity.toLowerCase()} details using the connected service.` : `Add a new ${entity.toLowerCase()}`}
           </CardDescription>
           {isEdit && id && <p className="text-xs text-gray-500">Editing ID: {id}</p>}
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700" htmlFor={`${entity}-name`}>Name</label>
-              <Input id={`${entity}-name`} placeholder={`${entity} name`} />
+        <CardContent>
+          {error && <div role="alert" className="mb-5 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-5 sm:grid-cols-2">
+              {fields.map((field) => (
+                <div key={field.name} className={`space-y-2 ${field.type === 'textarea' ? 'sm:col-span-2' : ''}`}>
+                  <label className="text-sm font-medium text-foreground" htmlFor={`${entity}-${field.name}`}>{field.label}</label>
+                  {field.type === 'textarea' ? (
+                    <textarea id={`${entity}-${field.name}`} value={formData[field.name] ?? ''} onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))} required={field.required} rows={4} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                  ) : field.type === 'select' ? (
+                    <select id={`${entity}-${field.name}`} value={formData[field.name] ?? ''} onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))} required={field.required} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <option value="">Select {field.label.toLowerCase()}</option>
+                      {field.options?.map((option) => <option key={option} value={option}>{option.replaceAll('_', ' ')}</option>)}
+                    </select>
+                  ) : (
+                    <Input id={`${entity}-${field.name}`} type={field.type ?? 'text'} value={formData[field.name] ?? ''} onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))} required={field.required} />
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700" htmlFor={`${entity}-code`}>Code / Identifier</label>
-              <Input id={`${entity}-code`} placeholder="e.g. SCH-2024-01" />
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <Button type="submit" disabled={saving || !isEdit}>{saving ? 'Saving…' : 'Save changes'}</Button>
+              <Button type="button" variant="outline" onClick={() => navigate(`/admin-dashboard/${section}`)}>Cancel</Button>
             </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700" htmlFor={`${entity}-notes`}>Notes</label>
-            <textarea
-              id={`${entity}-notes`}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={4}
-              placeholder={`Describe this ${entity.toLowerCase()}...`}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <Button type="submit">{isEdit ? 'Save changes' : 'Create'}</Button>
-            <Button variant="ghost">Cancel</Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
     </motion.div>
   );
 };
 
-const SettingsCard = () => (
-  <Card className="border-0 shadow-sm">
-    <CardHeader>
-      <CardTitle className="text-lg">Settings</CardTitle>
-      <CardDescription>Administrative settings and preferences</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-gray-500">Settings configuration will be implemented here.</p>
-    </CardContent>
-  </Card>
-);
+const SettingsCard = () => {
+  const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem('scholarsnap:reduce-motion') === 'true');
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('reduce-motion', reduceMotion);
+    localStorage.setItem('scholarsnap:reduce-motion', String(reduceMotion));
+  }, [reduceMotion]);
+
+  return (
+    <Card className="border border-border shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg">Display preferences</CardTitle>
+        <CardDescription>Accessibility preferences are saved in this browser.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <label className="flex cursor-pointer items-start justify-between gap-5 rounded-md border border-border p-4">
+          <span>
+            <span className="block font-medium text-foreground">Reduce motion</span>
+            <span className="mt-1 block text-sm text-muted-foreground">Limit interface animations and transitions.</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={reduceMotion}
+            onChange={(event) => setReduceMotion(event.target.checked)}
+            className="mt-1 h-4 w-4 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </label>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default AdminDashboard;

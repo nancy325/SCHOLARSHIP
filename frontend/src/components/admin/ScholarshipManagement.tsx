@@ -8,14 +8,10 @@ import {
   Eye, 
   MoreHorizontal,
   GraduationCap,
-  DollarSign,
   Calendar,
-  Users,
   Building2,
-  MapPin,
   BookOpen,
   Target,
-  Award,
   Clock,
   Loader2
 } from 'lucide-react';
@@ -68,6 +64,7 @@ const ScholarshipManagement = () => {
     university_id: '',
     institute_id: '',
     eligibility: '',
+    start_date: '',
     deadline: '',
     apply_link: ''
   });
@@ -83,24 +80,27 @@ const ScholarshipManagement = () => {
     pageRef.current = currentPage;
   }, [currentPage]);
 
-  // Load scholarships and options on component mount
+  const previousFilters = useRef([searchTerm, typeFilter, universityFilter, instituteFilter]);
+
+  // Load filter options once; list requests follow page and filter state below.
   useEffect(() => {
-    fetchScholarships(1); // Always load the first page on mount (reset)
     fetchInstitutes();
     fetchUniversities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When the user changes search or filter, reset to page 1 and fetch
+  // Filter changes return to page one; page and filter state each trigger a request.
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, typeFilter, universityFilter, instituteFilter]);
-
-  // When currentPage changes (either by search/filter or user page change), fetch for that page
-  useEffect(() => {
+    const filters = [searchTerm, typeFilter, universityFilter, instituteFilter];
+    const filtersChanged = filters.some((value, index) => value !== previousFilters.current[index]);
+    previousFilters.current = filters;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
     fetchScholarships(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, [currentPage, searchTerm, typeFilter, universityFilter, instituteFilter]);
 
   const prevUniversityIdForInstitute = () => {
     if (formData.university_id) return Number(formData.university_id);
@@ -258,6 +258,7 @@ const ScholarshipManagement = () => {
       university_id: '',
       institute_id: '',
       eligibility: '',
+      start_date: '',
       deadline: '',
       apply_link: ''
     });
@@ -397,26 +398,20 @@ const ScholarshipManagement = () => {
     }
   };
 
-  const getStatusBadge = (_status: string) => null;
-
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'government':
-        return <Badge className="bg-blue-100 text-blue-800">Government</Badge>;
+        return <Badge className="bg-emerald-50 text-emerald-800">Government</Badge>;
       case 'private':
-        return <Badge className="bg-green-100 text-green-800">Private</Badge>;
+        return <Badge className="bg-amber-50 text-amber-900">Private</Badge>;
       case 'university':
-        return <Badge className="bg-purple-100 text-purple-800">University</Badge>;
+        return <Badge className="bg-sky-50 text-sky-800">University</Badge>;
       case 'institute':
-        return <Badge className="bg-orange-100 text-orange-800">Institute</Badge>;
+        return <Badge className="bg-rose-50 text-rose-800">Institute</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
   };
-
-  const getLevelBadge = (_: string) => null;
-
-  const formatCurrency = (_amount: number, _currency: string) => '';
 
   const isDeadlineNear = (deadline: string) => {
     const deadlineDate = new Date(deadline);
@@ -441,6 +436,7 @@ const ScholarshipManagement = () => {
       university_id: scholarship.university_id?.toString() || '',
       institute_id: scholarship.institute_id?.toString() || '',
       eligibility: scholarship.eligibility || '',
+      start_date: scholarship.start_date || '',
       deadline: scholarship.deadline || '',
       apply_link: scholarship.apply_link || ''
     });
@@ -471,7 +467,7 @@ const ScholarshipManagement = () => {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search scholarships by title, institute, or field..."
                 value={searchTerm}
@@ -544,20 +540,19 @@ const ScholarshipManagement = () => {
           <span className="ml-2">Loading scholarships...</span>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {scholarships.map((scholarship) => (
-          <Card key={scholarship.id} className="hover:shadow-lg transition-shadow">
+          <Card key={scholarship.id} className="border-border shadow-sm transition-shadow hover:shadow-md">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <GraduationCap className="h-6 w-6 text-purple-600" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary/10">
+                    <GraduationCap className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1">
                     <CardTitle className="text-lg line-clamp-2">{scholarship.title}</CardTitle>
                     <div className="flex items-center space-x-2 mt-1">
                       {getTypeBadge(scholarship.type)}
-                      {getStatusBadge(scholarship.status)}
                     </div>
                   </div>
                 </div>
@@ -589,43 +584,40 @@ const ScholarshipManagement = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Building2 className="h-4 w-4" />
-                  <span className="truncate">{scholarship.institute?.name || 'N/A'}</span>
+                  <span className="truncate">{scholarship.institute?.name || scholarship.university?.name || 'No provider listed'}</span>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-start space-x-2 text-sm text-muted-foreground">
                   <BookOpen className="h-4 w-4" />
-                  <span className="truncate">{scholarship.description?.slice(0, 80) || 'No description'}</span>
+                  <span className="line-clamp-2">{scholarship.description || 'No description'}</span>
                 </div>
                 
                 <div className="pt-2 border-t">
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <Target className="h-4 w-4 text-gray-600" />
-                      <a className="text-blue-600 hover:underline" href={scholarship.apply_link} target="_blank" rel="noreferrer">Apply</a>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-blue-600" />
-                      <span>Public link</span>
-                    </div>
+                    {scholarship.apply_link ? (
+                      <a className="inline-flex items-center gap-2 text-primary hover:underline" href={scholarship.apply_link} target="_blank" rel="noopener noreferrer">
+                        <Target className="h-4 w-4" /> Visit application
+                      </a>
+                    ) : <span className="text-sm text-muted-foreground">No application link</span>}
                   </div>
                   
                   <div className="mt-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-sm">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>Deadline:</span>
+                        <span>Deadline</span>
                       </div>
                       <div className={`text-sm font-medium ${
-                        isDeadlineExpired(scholarship.deadline) ? 'text-red-600' :
-                        isDeadlineNear(scholarship.deadline) ? 'text-orange-600' : 'text-gray-600'
+                        scholarship.deadline && isDeadlineExpired(scholarship.deadline) ? 'text-destructive' :
+                        scholarship.deadline && isDeadlineNear(scholarship.deadline) ? 'text-secondary-foreground' : 'text-muted-foreground'
                       }`}>
-                        {scholarship.deadline}
+                        {scholarship.deadline || 'Not specified'}
                       </div>
                     </div>
                     
-                    {isDeadlineNear(scholarship.deadline) && !isDeadlineExpired(scholarship.deadline) && (
-                      <div className="flex items-center space-x-2 text-sm text-orange-600">
+                    {scholarship.deadline && isDeadlineNear(scholarship.deadline) && !isDeadlineExpired(scholarship.deadline) && (
+                      <div className="flex items-center space-x-2 text-sm text-secondary-foreground">
                         <Clock className="h-4 w-4" />
                         <span>Deadline approaching!</span>
                       </div>
@@ -636,6 +628,13 @@ const ScholarshipManagement = () => {
             </CardContent>
           </Card>
           ))}
+          {scholarships.length === 0 && (
+            <div className="col-span-full rounded-lg border border-dashed border-border bg-card px-6 py-12 text-center">
+              <GraduationCap className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+              <h4 className="font-semibold text-foreground">No scholarships found</h4>
+              <p className="mt-1 text-sm text-muted-foreground">Try a different search or clear the provider filters.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -664,85 +663,50 @@ const ScholarshipManagement = () => {
             <DialogDescription>Complete information about the scholarship</DialogDescription>
           </DialogHeader>
           {selectedScholarship && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-5 py-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Scholarship Title</Label>
+                  <Label>Scholarship title</Label>
                   <div className="text-sm font-medium">{selectedScholarship.title}</div>
                 </div>
                 <div>
-                  <Label>Institute</Label>
-                  <div className="text-sm font-medium">{selectedScholarship.institute}</div>
+                  <Label>Provider</Label>
+                  <div className="text-sm font-medium">{selectedScholarship.institute?.name || selectedScholarship.university?.name || 'Not specified'}</div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Type</Label>
                   <div>{getTypeBadge(selectedScholarship.type)}</div>
                 </div>
                 <div>
-                  <Label>Level</Label>
-                  <div>{getLevelBadge(selectedScholarship.level)}</div>
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <div>{getStatusBadge(selectedScholarship.status)}</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Amount</Label>
-                  <div className="text-lg font-bold text-green-600">
-                    {formatCurrency(selectedScholarship.amount, selectedScholarship.currency)}
-                  </div>
-                </div>
-                <div>
-                  <Label>Field of Study</Label>
-                  <div className="text-sm font-medium">{selectedScholarship.field}</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
                   <Label>Application Deadline</Label>
                   <div className={`text-sm font-medium ${
-                    isDeadlineExpired(selectedScholarship.deadline) ? 'text-red-600' : 'text-gray-600'
+                    selectedScholarship.deadline && isDeadlineExpired(selectedScholarship.deadline) ? 'text-destructive' : 'text-muted-foreground'
                   }`}>
-                    {selectedScholarship.deadline}
-                  </div>
-                </div>
-                <div>
-                  <Label>Applications</Label>
-                  <div className="text-sm font-medium">
-                    {selectedScholarship.applications}/{selectedScholarship.maxApplications}
+                    {selectedScholarship.deadline || 'Not specified'}
                   </div>
                 </div>
               </div>
               <div>
                 <Label>Description</Label>
-                <div className="text-sm text-gray-600">{selectedScholarship.description}</div>
-              </div>
-              <div>
-                <Label>Requirements</Label>
-                <div className="text-sm text-gray-600">{selectedScholarship.requirements}</div>
+                <div className="whitespace-pre-wrap text-sm text-muted-foreground">{selectedScholarship.description || 'No description available.'}</div>
               </div>
               <div>
                 <Label>Eligibility Criteria</Label>
-                <div className="text-sm text-gray-600">{selectedScholarship.eligibility}</div>
+                <div className="whitespace-pre-wrap text-sm text-muted-foreground">{selectedScholarship.eligibility || 'Not specified.'}</div>
               </div>
-              <div>
-                <Label>Required Documents</Label>
-                <div className="text-sm text-gray-600">{selectedScholarship.documents}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Created Date</Label>
-                  <div className="text-sm font-medium">{selectedScholarship.createdDate}</div>
+                  <Label>Start date</Label>
+                  <div className="text-sm font-medium">{selectedScholarship.start_date || 'Not specified'}</div>
                 </div>
                 <div>
-                  <Label>Last Updated</Label>
-                  <div className="text-sm font-medium">{selectedScholarship.lastUpdated}</div>
+                  <Label>Created</Label>
+                  <div className="text-sm font-medium">{selectedScholarship.created_at ? new Date(selectedScholarship.created_at).toLocaleDateString() : 'Not specified'}</div>
                 </div>
               </div>
+              {selectedScholarship.apply_link && <a href={selectedScholarship.apply_link} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Visit application <Target className="h-4 w-4" /></a>}
             </div>
           )}
           <div className="flex justify-end">
@@ -795,17 +759,26 @@ const ScholarshipManagement = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="merit_based">Merit-Based</SelectItem>
-                      <SelectItem value="need_based">Need-Based</SelectItem>
-                      <SelectItem value="project_based">Project-Based</SelectItem>
-                      <SelectItem value="athletic">Athletic</SelectItem>
+                      <SelectItem value="government">Government</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="university">University</SelectItem>
+                      <SelectItem value="institute">Institute</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="edit-start-date">Start date</Label>
+                  <Input
+                    id="edit-start-date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => handleInputChange('start_date', e.target.value)}
+                  />
+                </div>
                 <div>
                   <Label htmlFor="edit-deadline">Application Deadline</Label>
                   <Input 

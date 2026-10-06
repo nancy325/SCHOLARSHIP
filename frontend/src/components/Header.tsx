@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Menu, X, Bell, User, Settings, LogOut, Search } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiService } from "@/services/api";
 
 type HeaderVariant = "landing" | "admin" | "student";
@@ -15,6 +14,7 @@ interface HeaderProps {
   currentPage?: string; // For landing variant
   showSidebarToggle?: boolean; // For admin variant
   onNavigate?: (page: string) => void; // For landing variant navigation
+  adminNavItems?: Array<{ label: string; path: string }>;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -24,10 +24,13 @@ const Header: React.FC<HeaderProps> = ({
   currentPage,
   showSidebarToggle = true,
   onNavigate,
+  adminNavItems = [],
 }) => {
   const navigate = useNavigate();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminSearchMessage, setAdminSearchMessage] = useState("");
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -73,18 +76,44 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const handleAdminSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = adminSearch.trim().toLowerCase();
+    if (!query) return;
+    const match = adminNavItems.find((item) => item.label.toLowerCase() === query)
+      ?? adminNavItems.find((item) => item.label.toLowerCase().includes(query));
+    if (match) {
+      navigate(match.path);
+      setAdminSearchMessage(`${match.label} opened`);
+      setAdminSearch("");
+    } else {
+      setAdminSearchMessage("No admin section matches that search");
+    }
+  };
+
+  const handleLandingNavigation = (page: string) => {
+    if (onNavigate) {
+      onNavigate(page);
+    } else {
+      navigate(page === "home" ? "/" : `/?view=${encodeURIComponent(page)}`);
+    }
+  };
+
   // Landing Variant
   if (variant === "landing") {
     return (
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            <div className="flex items-center space-x-2">
-              <img src="/favicon.png" alt="Logo" className="w-20 h-20 rounded-lg" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] bg-clip-text text-transparent">
-                ScholarSnap
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={() => (onNavigate ? onNavigate("home") : navigate("/"))}
+              className="flex items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="ScholarSnap home"
+            >
+              <img src="/favicon.png" alt="" className="h-12 w-12 rounded-md object-contain" />
+              <span className="text-2xl font-semibold text-primary">ScholarSnap</span>
+            </button>
             {/* Hamburger for mobile */}
             <div className="flex md:hidden">
               <Button
@@ -101,28 +130,28 @@ const Header: React.FC<HeaderProps> = ({
             <div className="hidden md:flex items-center space-x-1">
               <Button
                 variant={currentPage === "home" ? "default" : "ghost"}
-                onClick={() => onNavigate?.("home")}
+                onClick={() => handleLandingNavigation("home")}
                 className="font-medium"
               >
                 Home
               </Button>
               <Button
                 variant={currentPage === "about" ? "default" : "ghost"}
-                onClick={() => onNavigate?.("about")}
+                onClick={() => handleLandingNavigation("about")}
                 className="font-medium"
               >
                 About Us
               </Button>
-              {/* <Button
+              <Button
                 variant={currentPage === "register" ? "default" : "ghost"}
-                onClick={() => onNavigate?.("register")}
+                onClick={() => handleLandingNavigation("register")}
                 className="font-medium"
               >
                 Register Institute
-              </Button> */}
+              </Button>
               <Button
                 variant={currentPage === "faqs" ? "default" : "ghost"}
-                onClick={() => onNavigate?.("faqs")}
+                onClick={() => handleLandingNavigation("faqs")}
                 className="font-medium"
               >
                 FAQs
@@ -164,7 +193,7 @@ const Header: React.FC<HeaderProps> = ({
                   <Button
                     variant={currentPage === "home" ? "default" : "ghost"}
                     onClick={() => {
-                      onNavigate?.("home");
+                      handleLandingNavigation("home");
                       setMobileMenuOpen(false);
                     }}
                     className="font-medium justify-start w-full"
@@ -174,27 +203,27 @@ const Header: React.FC<HeaderProps> = ({
                   <Button
                     variant={currentPage === "about" ? "default" : "ghost"}
                     onClick={() => {
-                      onNavigate?.("about");
+                      handleLandingNavigation("about");
                       setMobileMenuOpen(false);
                     }}
                     className="font-medium justify-start w-full"
                   >
                     About Us
                   </Button>
-                  {/* <Button
+                  <Button
                     variant={currentPage === "register" ? "default" : "ghost"}
                     onClick={() => {
-                      onNavigate?.("register");
+                      handleLandingNavigation("register");
                       setMobileMenuOpen(false);
                     }}
                     className="font-medium justify-start w-full"
                   >
                     Register Institute
-                  </Button> */}
+                  </Button>
                   <Button
                     variant={currentPage === "faqs" ? "default" : "ghost"}
                     onClick={() => {
-                      onNavigate?.("faqs");
+                      handleLandingNavigation("faqs");
                       setMobileMenuOpen(false);
                     }}
                     className="font-medium justify-start w-full"
@@ -233,14 +262,14 @@ const Header: React.FC<HeaderProps> = ({
   // Admin Variant
   if (variant === "admin") {
     return (
-      <header className="sticky top-0 z-30 border-b bg-white/95 backdrop-blur shadow-sm">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/95 shadow-sm backdrop-blur">
         <div className="flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
             {showSidebarToggle && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0 md:hidden text-slate-800 hover:bg-slate-100"
+                className="shrink-0 text-foreground hover:bg-muted md:hidden"
                 onClick={() => onSidebarToggle?.()}
               >
                 {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -251,33 +280,32 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-3">
               <img src="/favicon.png" alt="ScholarSnap" className="w-10 h-10 rounded-lg shadow-sm" />
               <div className="leading-tight">
-                <div className="text-lg font-bold text-[#1E3A8A]">ScholarSnap</div>
-                <p className="text-xs text-slate-500">Admin Console</p>
+                <div className="text-lg font-semibold text-primary">ScholarSnap</div>
+                  <p className="text-xs text-muted-foreground">Admin console</p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
-            <form className="hidden md:block">
+            <form onSubmit={handleAdminSearch} className="hidden sm:block">
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search"
-                  className="pl-8 w-[260px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-500"
+                  value={adminSearch}
+                  onChange={(event) => { setAdminSearch(event.target.value); setAdminSearchMessage(""); }}
+                  aria-label="Jump to admin section"
+                  placeholder="Jump to section"
+                  className="w-[220px] border-input bg-background pl-8 text-foreground placeholder:text-muted-foreground"
                 />
+                <p role="status" aria-live="polite" className="absolute right-0 top-full mt-1 text-xs text-muted-foreground">{adminSearchMessage}</p>
               </div>
             </form>
-
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-700 hover:bg-slate-100">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Notifications</span>
-            </Button>
 
             <Button
               variant="ghost"
               size="sm"
-              className="hidden md:inline-flex gap-2 text-slate-900 hover:bg-slate-100"
+              className="hidden gap-2 text-foreground hover:bg-muted md:inline-flex"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4" />
@@ -286,18 +314,12 @@ const Header: React.FC<HeaderProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden h-9 w-9 text-slate-900 hover:bg-slate-100"
+              className="h-9 w-9 text-foreground hover:bg-muted md:hidden"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4" />
             </Button>
 
-            <Button variant="ghost" size="icon" className="overflow-hidden rounded-full border border-slate-200 bg-white">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src="/favicon.png" alt="Admin" />
-                <AvatarFallback className="bg-slate-100 text-slate-700">AD</AvatarFallback>
-              </Avatar>
-            </Button>
           </div>
         </div>
       </header>
@@ -316,8 +338,8 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/95 shadow-sm backdrop-blur-md">
+      <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: Hamburger Menu + Logo */}
           <div className="flex items-center gap-4">
@@ -328,7 +350,7 @@ const Header: React.FC<HeaderProps> = ({
                 e.stopPropagation();
                 onSidebarToggle?.();
               }}
-              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Toggle sidebar"
               aria-controls="student-sidebar"
               aria-expanded={sidebarOpen}
@@ -342,44 +364,40 @@ const Header: React.FC<HeaderProps> = ({
                 alt="ScholarSnap Logo"
                 className="w-10 h-10 object-contain"
               />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent">
+              <span className="text-xl font-semibold text-primary">
                 ScholarSnap
               </span>
             </div>
           </div>
 
-          {/* Right: Notifications + User Profile */}
+          {/* Right: User Profile */}
           <div className="flex items-center gap-3">
-            <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                3
-              </span>
-            </button>
-
             {/* User Profile - Round Shape */}
             <div className="relative" ref={profileMenuRef}>
               <button
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 focus:outline-none"
+                className="flex items-center gap-2 rounded-full p-1.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="User menu"
+                aria-expanded={profileMenuOpen}
+                aria-haspopup="menu"
+                type="button"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md ring-2 ring-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground ring-2 ring-card">
                   {userInitial}
                 </div>
               </button>
 
               {/* Profile Dropdown Menu */}
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg z-50 border border-gray-100 overflow-hidden">
-                  <div className="p-4 border-b border-gray-100">
+                <div role="menu" className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-md border border-border bg-popover shadow-lg">
+                  <div className="border-b border-border p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center text-white font-semibold shadow-md">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground shadow-sm">
                         {userInitial}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">{userName}</p>
-                        <p className="text-xs text-gray-500">Student Account</p>
+                        <p className="text-sm font-semibold text-popover-foreground">{userName}</p>
+                        <p className="text-xs text-muted-foreground">Student account</p>
                       </div>
                     </div>
                   </div>
@@ -389,9 +407,11 @@ const Header: React.FC<HeaderProps> = ({
                         setProfileMenuOpen(false);
                         navigate("?tab=profile");
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-gray-700 hover:bg-blue-50 transition-colors text-sm"
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-popover-foreground transition-colors hover:bg-muted"
                     >
-                      <User className="w-4 h-4 text-blue-500" />
+                      <User className="h-4 w-4 text-primary" />
                       Profile
                     </button>
                     <button
@@ -399,15 +419,19 @@ const Header: React.FC<HeaderProps> = ({
                         setProfileMenuOpen(false);
                         navigate("?tab=settings");
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-gray-700 hover:bg-blue-50 transition-colors text-sm"
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-popover-foreground transition-colors hover:bg-muted"
                     >
-                      <Settings className="w-4 h-4 text-indigo-500" />
+                      <Settings className="h-4 w-4 text-primary" />
                       Settings
                     </button>
-                    <div className="border-t border-gray-100 my-1"></div>
+                    <div className="my-1 border-t border-border"></div>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors text-sm"
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/5"
                     >
                       <LogOut className="w-4 h-4" />
                       Logout

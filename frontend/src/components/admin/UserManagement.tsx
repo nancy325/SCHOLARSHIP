@@ -38,6 +38,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -106,7 +107,7 @@ const UserManagement = () => {
       console.error('Failed to fetch users:', error);
       setUsers([]);
       const errorMessage = error?.response?.data?.message || 'Failed to fetch users. Please try again.';
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -150,20 +151,20 @@ const UserManagement = () => {
           RecStatus: 'active'
         });
         fetchUsers(); // Refresh the list
-        alert('User created successfully!');
+        toast.success('User created successfully');
       } else {
         const errorMessage = response.message || 'Failed to create user';
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error: any) {
       console.error('Failed to create user:', error);
       const serverError = error?.response?.data;
       if (serverError?.errors) {
         const validationErrors = Object.values(serverError.errors).flat().join(', ');
-        alert(`Validation errors: ${validationErrors}`);
+        toast.error(`Validation errors: ${validationErrors}`);
       } else {
         const errorMessage = serverError?.message || 'Failed to create user. Please try again.';
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setCreating(false);
@@ -240,20 +241,20 @@ const UserManagement = () => {
       if (response.success) {
         setIsEditUserOpen(false);
         fetchUsers(); // Refresh the list
-        alert('User updated successfully!');
+        toast.success('User updated successfully');
       } else {
         const errorMessage = response.message || 'Failed to update user';
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error: any) {
       console.error('Failed to update user:', error);
       const serverError = error?.response?.data;
       if (serverError?.errors) {
         const validationErrors = Object.values(serverError.errors).flat().join(', ');
-        alert(`Validation errors: ${validationErrors}`);
+        toast.error(`Validation errors: ${validationErrors}`);
       } else {
         const errorMessage = serverError?.message || 'Failed to update user. Please try again.';
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setUpdating(false);
@@ -286,7 +287,7 @@ const UserManagement = () => {
     
     // Prevent admin from deleting themselves
     if (currentUser.id === userId) {
-      alert('You cannot delete your own account. Please ask another admin to delete your account.');
+      toast.error('You cannot delete your own account.');
       return;
     }
     
@@ -296,15 +297,15 @@ const UserManagement = () => {
         const response = await apiService.deleteUser(userId);
         if (response.success) {
           fetchUsers(); // Refresh the list
-          alert('User deleted successfully!');
+          toast.success('User deleted successfully');
         } else {
-          alert(response.message || 'Failed to delete user');
+          toast.error(response.message || 'Failed to delete user');
         }
       } catch (error: any) {
         console.error('Failed to delete user:', error);
         const serverError = error?.response?.data;
         const errorMessage = serverError?.message || 'Failed to delete user. Please try again.';
-        alert(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setDeleting(false);
       }
@@ -314,10 +315,10 @@ const UserManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h3 className="text-lg font-semibold">User Management</h3>
-          <p className="text-sm text-gray-600">Manage all registered users and their accounts</p>
+          <p className="text-sm text-muted-foreground">Manage registered accounts, roles, and education categories</p>
         </div>
         <Button onClick={() => navigate('/admin-dashboard/users/create')}>
           <Plus className="mr-2 h-4 w-4" />
@@ -326,7 +327,7 @@ const UserManagement = () => {
       </div>
 
       {/* Filters and Search */}
-      <Card>
+      <Card className="border-border shadow-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -357,7 +358,7 @@ const UserManagement = () => {
       </Card>
 
       {/* Users Table */}
-      <Card>
+      <Card className="border-border shadow-sm">
         <CardHeader>
           <CardTitle>Users ({filteredUsers.length})</CardTitle>
           <CardDescription>Manage user accounts and permissions</CardDescription>
@@ -371,7 +372,7 @@ const UserManagement = () => {
             ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b border-border">
                   <th className="text-left py-3 px-4 font-medium">User</th>
                   <th className="text-left py-3 px-4 font-medium">Contact</th>
                   <th className="text-left py-3 px-4 font-medium">Institute</th>
@@ -386,15 +387,15 @@ const UserManagement = () => {
               <tbody>
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
-                  <tr key={user.id} className="border-b hover:bg-gray-50">
+                  <tr key={user.id} className="border-b border-border transition-colors hover:bg-muted/60">
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-gray-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
+                          <User className="h-5 w-5 text-primary" />
                         </div>
                         <div>
                           <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-gray-500">ID: {user.id}</div>
+                          <div className="text-sm text-muted-foreground">ID: {user.id}</div>
                         </div>
                       </div>
                     </td>
@@ -444,7 +445,7 @@ const UserManagement = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" aria-label={`Actions for ${user.name}`} />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

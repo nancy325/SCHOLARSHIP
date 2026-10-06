@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // MySQL-only migration (INFORMATION_SCHEMA / storage engines)
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Add user_id column to profiles if it doesn't exist, then add foreign key
         if (Schema::hasTable('profiles')) {
             Schema::table('profiles', function (Blueprint $table) {
@@ -75,6 +80,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // MySQL-only migration (INFORMATION_SCHEMA / storage engines)
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Drop foreign keys
         if (Schema::hasTable('feedback')) {
             Schema::table('feedback', function (Blueprint $table) {
@@ -118,11 +128,14 @@ return new class extends Migration
      */
     private function constraintExists($table, $constraint)
     {
-        $result = DB::select(DB::raw(
-            "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-            WHERE TABLE_NAME = ? AND CONSTRAINT_NAME = ? AND TABLE_SCHEMA = ?",
+        $result = DB::select(
+            "SELECT CONSTRAINT_NAME
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            WHERE TABLE_NAME = ?
+              AND CONSTRAINT_NAME = ?
+              AND TABLE_SCHEMA = ?",
             [$table, $constraint, DB::getDatabaseName()]
-        ));
+        );
 
         return count($result) > 0;
     }

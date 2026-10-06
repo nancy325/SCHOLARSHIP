@@ -38,6 +38,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const InstituteManagement = () => {
   const navigate = useNavigate();
@@ -242,13 +243,13 @@ const InstituteManagement = () => {
         });
         setSelectedUniversityId('');
         fetchInstitutes(); // Refresh the list
-        alert('Institute created successfully!');
+        toast.success('Institute created successfully');
       } else {
-        alert(response.message || 'Failed to create institute');
+        toast.error(response.message || 'Failed to create institute');
       }
     } catch (error) {
       console.error('Failed to create institute:', error);
-      alert('Failed to create institute. Please check the form data and try again.');
+      toast.error('Failed to create institute. Please check the form data and try again.');
     }
   };
 
@@ -298,21 +299,21 @@ const InstituteManagement = () => {
       if (response.success) {
         setIsEditInstituteOpen(false);
         fetchInstitutes(); // Refresh the list
-        alert('Institute updated successfully!');
+        toast.success('Institute updated successfully');
       } else {
         console.error('Update failed:', response);
         const errorMsg = response.errors ? 
           `Validation errors: ${JSON.stringify(response.errors)}` : 
           (response.message || 'Failed to update institute');
-        alert(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error: any) {
       console.error('Failed to update institute:', error);
       const server = (error as any)?.response?.data;
       if (server?.errors) {
-        alert(`Validation errors: ${JSON.stringify(server.errors)}`);
+        toast.error(`Validation errors: ${JSON.stringify(server.errors)}`);
       } else {
-        alert(server?.message || 'Failed to update institute. Please check the form data and try again.');
+        toast.error(server?.message || 'Failed to update institute. Please check the form data and try again.');
       }
     }
   };
@@ -343,13 +344,13 @@ const InstituteManagement = () => {
         const response = await apiService.deleteInstitute(instituteId);
         if (response.success) {
           fetchInstitutes(); // Refresh the list
-          alert('Institute deleted successfully!');
+          toast.success('Institute deleted successfully');
         } else {
-          alert(response.message || 'Failed to delete institute');
+          toast.error(response.message || 'Failed to delete institute');
         }
       } catch (error) {
         console.error('Failed to delete institute:', error);
-        alert('Failed to delete institute. Please try again.');
+        toast.error('Failed to delete institute. Please try again.');
       }
     }
   };
@@ -357,13 +358,13 @@ const InstituteManagement = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Badge className="bg-green-100 text-green-800">Verified</Badge>;
+        return <Badge className="bg-emerald-50 text-emerald-800">Verified</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+        return <Badge className="bg-amber-50 text-amber-900">Pending</Badge>;
       case 'suspended':
-        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
+        return <Badge className="bg-rose-50 text-rose-800">Suspended</Badge>;
       case 'rejected':
-        return <Badge className="bg-gray-100 text-gray-800">Rejected</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">Rejected</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -372,14 +373,14 @@ const InstituteManagement = () => {
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'university':
-        return <Badge className="bg-blue-100 text-blue-800">University</Badge>;
+        return <Badge className="bg-sky-50 text-sky-800">University</Badge>;
       case 'community_college':
-        return <Badge className="bg-purple-100 text-purple-800">Community College</Badge>;
+        return <Badge className="bg-violet-50 text-violet-800">Community College</Badge>;
       case 'technical_institute':
-        return <Badge className="bg-green-100 text-green-800">Technical Institute</Badge>;
+        return <Badge className="bg-emerald-50 text-emerald-800">Technical Institute</Badge>;
 
       case 'liberal_arts':
-        return <Badge className="bg-orange-100 text-orange-800">Liberal Arts</Badge>;
+        return <Badge className="bg-amber-50 text-amber-900">Liberal Arts</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
@@ -392,7 +393,7 @@ const InstituteManagement = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-lg font-semibold">Institute Management</h3>
-          <p className="text-sm text-gray-600">Manage registered educational institutions and their profiles</p>
+          <p className="text-sm text-muted-foreground">Manage registered educational institutions and their profiles</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => navigate('/admin-dashboard/institutes/create')}>
@@ -403,11 +404,11 @@ const InstituteManagement = () => {
       </div>
 
       {/* Search and Filters */}
-        <Card>
+        <Card className="border-border shadow-sm">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search institutes..."
                   value={searchTerm}
@@ -469,24 +470,24 @@ const InstituteManagement = () => {
         </Card>
 
       {/* Institutes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {loading ? (
             <div className="col-span-full text-center py-8">
-              <div className="text-sm text-gray-500">Loading institutes...</div>
+              <div role="status" className="text-sm text-muted-foreground">Loading institutes...</div>
             </div>
           ) : institutes.length > 0 ? (
             institutes.map((institute: any) => (
-              <Card key={institute.id} className="hover:shadow-md transition-shadow">
+              <Card key={institute.id} className="border-border shadow-sm transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <CardTitle className="text-lg">{institute.name}</CardTitle>
-                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Building2 className="h-4 w-4" />
                         {getTypeBadge(institute.type)}
                       </div>
                       {institute.university && (
-                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <span className="font-medium">{institute.university.name}</span>
                         </div>
                       )}
@@ -519,31 +520,31 @@ const InstituteManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                       <Mail className="h-4 w-4" />
                       <span>{institute.email}</span>
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                       <Phone className="h-4 w-4" />
                       <span>{institute.phone || 'N/A'}</span>
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4" />
                       <span className="truncate">{institute.address || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{institute.students?.toLocaleString() || 0} students</span>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{institute.students?.toLocaleString() || 0} students</span>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        <Star className="h-4 w-4 fill-current text-secondary" />
                         <span className="text-sm font-medium">{institute.rating || 0}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       {getStatusBadge(institute.status)}
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {institute.created_at ? new Date(institute.created_at).toLocaleDateString() : 'N/A'}
                       </div>
                     </div>
@@ -553,7 +554,7 @@ const InstituteManagement = () => {
             ))
           ) : (
             <div className="col-span-full text-center py-8">
-              <div className="text-sm text-gray-500">No institutes found</div>
+              <div className="text-sm text-muted-foreground">No institutes match these filters.</div>
             </div>
           )}
         </div>

@@ -46,7 +46,7 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children, navItems }) => 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Header Component */}
       <Header 
         variant="student"

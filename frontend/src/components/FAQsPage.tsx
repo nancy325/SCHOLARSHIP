@@ -7,8 +7,10 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HelpCircle, MessageCircle, FileText, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const FAQsPage = () => {
+  const navigate = useNavigate();
   const faqCategories = [
     {
       category: "General Information",
@@ -200,11 +202,11 @@ const FAQsPage = () => {
               with any questions or concerns you may have.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="px-8">
+              <Button size="lg" onClick={() => navigate("/contact")} className="px-8">
                 <MessageCircle className="w-5 h-5 mr-2" />
                 Contact Support
               </Button>
-              <Button variant="outline" size="lg" className="px-8">
+              <Button variant="outline" size="lg" onClick={() => navigate("/all-scholarships")} className="px-8">
                 <FileText className="w-5 h-5 mr-2" />
                 Browse Help Center
               </Button>

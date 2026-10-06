@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import HomePage from "@/components/HomePage";
 import AboutUsPage from "@/components/AboutUsPage";
 import FAQsPage from "@/components/FAQsPage";
 import RegisterInstitutePage from "@/components/RegisterInstitutePage";
-import Login from "./Login";
-import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 const Index = () => {
-  const [currentPage, setCurrentPage] = useState("home");
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = searchParams.get("view") || "home";
+  const setCurrentPage = (page: string) => {
+    setSearchParams(page === "home" ? {} : { view: page });
+  };
 
   const renderPage = () => {
     switch (currentPage) {
@@ -20,10 +21,8 @@ const Index = () => {
         return <FAQsPage />;
       case "register":
         return <RegisterInstitutePage />;
-      case "Login":
-        return <Login />;
       default:
-        return <HomePage />;
+        return <HomePage onNavigate={setCurrentPage} />;
     }
   };
 
